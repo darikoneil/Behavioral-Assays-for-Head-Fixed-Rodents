@@ -16,7 +16,13 @@ class HardConfig:
 
         # Device 2
         self.device_2_dictionary = {
-            "Device 2 Ground": "J4, Interfaces wit L293D HBridge",
+            "Device 2 Ground A": "J4, Interfaces wit L293D HBridge",
+            "Device 2 Ground B": "Sucrose Capacitive Touch Breakout, GND",
+            "Device 2 Ground C": "Water Capacitive Touch Breakout, GND",
+            "Device 2 5V Source A": "Sucrose Capacitive Touch Breakout, VDD",
+            "Device 2 5V Source B": "Water Capacitive Touch Breakout, VDD",
+            "Device 2 Digital Pin 7": "Sucrose Capacitive Touch Breakout, OUT",
+            "Device 2 Digital Pin 6": "Water Capacitive Touch Breakout, OUT",
         }
 
         # Device 4
