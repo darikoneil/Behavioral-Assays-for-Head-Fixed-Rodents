@@ -49,6 +49,13 @@ class HardConfig:
             "J15": "J15 to Lick Swapper Motor Signal",
         }
 
+        self.external_components_dictionary = {
+            "Lick Spout Swapping Servo": "GWS PICO STD",
+            "Capacitive Touch Breakouts": "AT42QT-1010",
+            "HBridge": "L293D",
+            "Solenoids": "Parker 003-0218-900",
+        }
+
         # General DAQ Parameters
         self.timeout = np.float64(10)  # timeout parameter must be type floating 64 (units: seconds, double)
         self.samplingRate = int(1000)  # DAQ sampling rate (units: Hz, integer)
