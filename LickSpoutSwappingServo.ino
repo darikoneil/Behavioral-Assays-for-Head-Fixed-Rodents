@@ -10,16 +10,14 @@ int servoOutPin = 3;
 int servoRelayIn = 7;
 
 void setup() {
-  // put your setup code here, to run once:
   pinMode(servoOutPin, OUTPUT);
   pinMode(servoRelayIn, INPUT);
   Serial.begin(38400);
-  Serial.println(Programname);
+  Serial.println(Program);
   LickSwapper.attach(servoOutPin);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
 
   if (digitalRead(servoRelayIn)==HIGH) {
     Serial.println("HIGH");
