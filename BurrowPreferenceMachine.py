@@ -5,9 +5,13 @@ from time import time
 
 
 class BurrowPreferenceTask(Thread):
-    def __init__(self):
+    def __init__(self, *args):
         # Passed from config
-        _config = BurrowPreferenceConfig()
+        if args:
+            _config = args[0]
+        else:
+            _config = BurrowPreferenceConfig("pass") # Folder will already exist since created in DAQ Step
+
         self.animal_id = _config.animal_id
         self.habituation_duration = _config.habituation_duration
         self.behavior_duration = _config.behavior_duration
@@ -40,7 +44,7 @@ class BurrowPreferenceTask(Thread):
             {'trigger': 'startBehavior', 'source': 'Setup', 'dest': 'Habituation', 'before': 'initializeHabituation'},
             {'trigger': 'graduateHabituation', 'source': 'Habituation', 'dest': 'PreferenceTest', 'before': 'initializePreference', 'conditions': 'allowedToProceed'},
             {'trigger': 'graduatePreference', 'source': 'PreferenceTest', 'dest': 'Saving', 'conditions': 'allowedToProceed'},
-            {'trigger': 'finishSaving', 'source': 'Saving', 'dest': 'End'},
+            {'trigger': 'finishedSaving', 'source': 'Saving', 'dest': 'End'},
         ]
 
         Machine(model=self, states=self.states, transitions=self.transitions, initial='Setup')
@@ -72,7 +76,7 @@ class BurrowPreferenceTask(Thread):
             elif self.state is 'End':
                 self.start_run = False
                 print("Ending...")
-                break
+                return
 
     def allowedToProceed(self):
         return self.proceed_sync

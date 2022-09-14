@@ -79,7 +79,7 @@ class HardConfig:
 
         # Analog Outputs - Burrow
         self.numAnalogOut = int(2)
-        self.motorChannel = "Dev1/ai0"
+        self.motorChannel = "Dev1/ao0"
         self.uCSChannel = "Dev1/ao1"
         self.analogChansOut = "Dev1/ao0:1"
 

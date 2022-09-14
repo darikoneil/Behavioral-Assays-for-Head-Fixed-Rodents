@@ -1,6 +1,7 @@
 # Conduct type check of behavioral configurations
 from os import path
 
+
 def test_burrow_preference_config(*args):
     """
     This function tests validity & integrity of the burrow preference configuration

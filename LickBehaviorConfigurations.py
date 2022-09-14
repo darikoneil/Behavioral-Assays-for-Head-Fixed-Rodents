@@ -6,7 +6,7 @@ class BurrowPreferenceConfig:
     """
     Configuration File for Burrow Preference Task
     """
-    def __init__(self):
+    def __init__(self, *args):
         # initialize validation flag
         self.validated = False
 
@@ -23,8 +23,11 @@ class BurrowPreferenceConfig:
         try:
             mkdir(self.data_path)
         except FileExistsError:
-            print("\nThis folder already exists!!! Please use unique animal identifiers!\n")
-            return
+            if args:
+                pass
+            else:
+                print("\nThis folder already exists!!! Please use unique animal identifiers!\n")
+                return
 
         # Check Integrity
         self.validated = self.validation()
