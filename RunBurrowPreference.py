@@ -5,6 +5,8 @@ from BurrowPreferenceMachine import BurrowPreferenceTask
 from LickBehaviorConfigurations import BurrowPreferenceConfig
 from HardwareConfiguration import HardConfig
 
+from SaveModule import Saver, Pickler
+
 import sys
 from ctypes import byref
 import numpy as np
@@ -19,6 +21,7 @@ class DAQtoBurrow(Task):
     """
     Instance Factory for DAQ to Burrow interface
     """
+
     def __init__(self, *args):
         Task.__init__(self)
 
@@ -30,6 +33,7 @@ class DAQtoBurrow(Task):
         self.habituation_complete = False
         self.preference_complete = False
         self.saving_complete = False
+        self.behavior_complete = False
 
         # Import Burrow Preference Configuration
         if args:
@@ -39,10 +43,10 @@ class DAQtoBurrow(Task):
 
         # Import Hardware Configuration
         _hardware_config = HardConfig()
-        
+
         # Instance Behavior
         self.burrow_preference_machine = BurrowPreferenceTask()
-        
+
         # Setup DAQ - General DAQ Parameters - Put into class because might be iterated on
         self.timeout = _hardware_config.timeout  # timeout parameter must be type floating 64 (units: seconds, double)
         self.samplingRate = _hardware_config.samplingRate  # DAQ sampling rate (units: Hz, integer)
@@ -50,10 +54,11 @@ class DAQtoBurrow(Task):
         self.buffersPerSecond = _hardware_config.buffersPerSecond  # DAQ buffers each second (units: Hz, round integer)
         # Samples per Buffer (units: samples, round integer) (Comment for below)
         self.bufferSize = _hardware_config.bufferSize
-        self.totNumBuffers = int() # integer record of number of buffers collected (running)
+        self.totNumBuffers = int()  # integer record of number of buffers collected (running)
 
         # Setup DAQ - Device 1 - Instance Analog Inputs ( Multi-Channel Matrix with Single Grab )
-        self.DAQAnalogInBuffer = np.tile(np.zeros((self.bufferSize,), dtype=np.float64), (_hardware_config.numAnalogIn, 1))
+        self.DAQAnalogInBuffer = np.tile(np.zeros((self.bufferSize,), dtype=np.float64),
+                                         (_hardware_config.numAnalogIn, 1))
         self.numSamplesPerBlock = np.uint32(_hardware_config.numAnalogIn * self.bufferSize)
         self.voltageRangeIn = _hardware_config.analogVoltageRange
         self.units = int32()  # read units (type 32b integer, this implies default units)
@@ -78,7 +83,8 @@ class DAQtoBurrow(Task):
         # Setup DAQ - Device 1 - Instance Digital Outputs
         # | Gate Out Driver (For Open Collector)
         self.gateOutDriver = Task()
-        self.gateOutDriver.CreateDOChan(_hardware_config.gateOutDriveChannel, "Gate Drive Out", DAQmx_Val_ChanForAllLines)
+        self.gateOutDriver.CreateDOChan(_hardware_config.gateOutDriveChannel, "Gate Drive Out",
+                                        DAQmx_Val_ChanForAllLines)
 
         # Setup DAQ - Device 1 - Instance Digital Inputs
         # | Gate Trigger Input
@@ -124,7 +130,8 @@ class DAQtoBurrow(Task):
         self.attemptSucrose.numBytesPerSamp = int32()  # bytes per sample (signed 32b integer)
         # number of elements inn readArray that constitutes a sample per channel (signed 32b integer)
         self.attemptSucrose.arraySizeInBytes = self.attemptSucrose.readData.__len__()
-        self.attemptSucrose.CreateDIChan(_hardware_config.deliveredSucroseChannel, "Attempted Sucrose", DAQmx_Val_ChanForAllLines)
+        self.attemptSucrose.CreateDIChan(_hardware_config.deliveredSucroseChannel, "Attempted Sucrose",
+                                         DAQmx_Val_ChanForAllLines)
         # | Attempted Water Delivery
         self.attemptWater = Task()
         self.attemptWater.fillMode = np.bool_(1)  # Flag interleaved samples (32b boolean)
@@ -135,7 +142,8 @@ class DAQtoBurrow(Task):
         self.attemptWater.numBytesPerSamp = int32()  # bytes per sample (signed 32b integer)
         # number of elements inn readArray that constitutes a sample per channel (signed 32b integer)
         self.attemptWater.arraySizeInBytes = self.attemptWater.readData.__len__()
-        self.attemptWater.CreateDIChan(_hardware_config.deliveredWaterChannel, "Attempted Water", DAQmx_Val_ChanForAllLines)
+        self.attemptWater.CreateDIChan(_hardware_config.deliveredWaterChannel, "Attempted Water",
+                                       DAQmx_Val_ChanForAllLines)
         # | Licked Sucrose
         self.lickedSucrose = Task()
         self.lickedSucrose.fillMode = np.bool_(1)  # Flag interleaved samples (32b boolean)
@@ -146,7 +154,8 @@ class DAQtoBurrow(Task):
         self.lickedSucrose.numBytesPerSamp = int32()  # bytes per sample (signed 32b integer)
         # number of elements inn readArray that constitutes a sample per channel (signed 32b integer)
         self.lickedSucrose.arraySizeInBytes = self.lickedSucrose.readData.__len__()
-        self.lickedSucrose.CreateDIChan(_hardware_config.lickedSucroseChannel, "Licked Sucrose", DAQmx_Val_ChanForAllLines)
+        self.lickedSucrose.CreateDIChan(_hardware_config.lickedSucroseChannel, "Licked Sucrose",
+                                        DAQmx_Val_ChanForAllLines)
         # | Licked Water
         self.lickedWater = Task()
         self.lickedWater.fillMode = np.bool_(1)  # Flag interleaved samples (32b boolean)
@@ -176,8 +185,27 @@ class DAQtoBurrow(Task):
         self.bufferedAnalogDataToSave = np.array(self.DAQAnalogInBuffer.copy(), dtype=np.float64)
         self.bufferedStateToSave = np.array(['0'], dtype=str)
 
+        # DAQ Callback Tracking (usually commented out)
+        self.daq_catch_times = []
+        self.daq_catch_times_saver = Saver()
+        self.daq_catch_times_saver.filename = self.burrow_preference_config.data_path + "\\daq_catch_times.npy"
+
+        self.save_module_analog = Saver()
+        self.save_module_analog.filename = self.burrow_preference_config.data_path + "\\analog.npy"
+        self.save_module_state = Saver()
+        self.save_module_state.filename = self.burrow_preference_config.data_path + "\\state.npy"
+        self.save_module_config = Pickler()
+        self.save_module_config.filename = self.burrow_preference_config.data_path + "\\behavior_config"
+
+        # We don't care enough let's just keep the attribute space clean for coding purposes
+        _save_module_hardware = Pickler()
+        _save_module_hardware.filename = self.burrow_preference_config.data_path + "\\hardware_config"
+        _ = _save_module_hardware.timeToSave()
+        _save_module_hardware = None  # Is this necessary lmao
+
     def EveryNCallback(self):
         self.burrow_preference_machine.proceed_sync = True
+        _start_time = time()
 
         # Read Device 1 Analog Inputs
         self.ReadAnalogF64(self.bufferSize, self.timeout, DAQmx_Val_GroupByChannel, self.DAQAnalogInBuffer,
@@ -186,16 +214,32 @@ class DAQtoBurrow(Task):
         self.grabbedAnalogBuffer = self.DAQAnalogInBuffer.copy()  # Grab the buffer now and make NI drivers happy if we have any lags
         self.totNumBuffers += 1
 
-        self.bufferedAnalogDataToSave = np.append(self.bufferedDataToSave, self.grabbedAnalogBuffer, axis=1)
+        if self.current_state != self.burrow_preference_machine.state:
+            self.current_state = self.burrow_preference_machine.state
+            self.update_behavior()
+
+            if self.current_state == "Saving":
+                self.save_data()
+                self.burrow_preference_machine.saving_complete = True
+
+            if self.current_state == "End":
+                self.behavior_complete = True
+
+        self.bufferedAnalogDataToSave = np.append(self.bufferedAnalogDataToSave, self.grabbedAnalogBuffer, axis=1)
         self.bufferedStateToSave = np.append(self.bufferedStateToSave, self.current_state)
 
         self.burrow_preference_machine.proceed_sync = False
+
+        _catch_time = (time() - _start_time) * 1000
+        self.daq_catch_times.append(_catch_time)
+
+        # print("".join(["This iteration was ", str(_catch_time), " milliseconds"]))
 
         return 0
 
     @staticmethod
     def DoneCallback(status):
-        print("Status ", status.value) # Not sure why we print but that's fine
+        print("Status ", status.value)  # Not sure why we print but that's fine
         return 0
 
     def clearDAQ(self):
@@ -223,24 +267,44 @@ class DAQtoBurrow(Task):
         self.ClearTask()
 
     def save_data(self):
-        return
+        print("Saving Analog Data...")
+        self.save_module_analog.bufferedData = self.bufferedAnalogDataToSave.copy()
+        _ = self.save_module_analog.timeToSave()
+
+        print("Saving State Data...")
+        self.save_module_state.bufferedData = self.bufferedStateToSave.copy()
+        _ = self.save_module_state.timeToSave()
+
+        print("Saving Config Data...")
+        self.save_module_config.pickledPickles = self.burrow_preference_config
+        _ = self.save_module_config.timeToSave()
+
+        # Save DAQ Catch Times (usually commented out)
+        print("Saving DAQ Catch Times...")
+        self.daq_catch_times_saver.bufferedData = self.daq_catch_times
+        _ = self.daq_catch_times_saver.timeToSave()
+
+    def update_behavior(self):
+        self.habituation_complete = self.burrow_preference_machine.habituation_complete
+        self.preference_complete = self.burrow_preference_machine.preference_complete
+        self.saving_complete = self.burrow_preference_machine.saving_complete
 
     def startAcquisition(self):
-        self.StartTask() # Device 1 - Analog Inputs (Master Clock!!!)
+        self.StartTask()  # Device 1 - Analog Inputs (Master Clock!!!)
         # Device 1 Analog Output
         self.motorOut.StartTask()
         # Device 1 Digital Output
         self.gateOutDriver.StartTask()
-        self.gateOutDriver.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(1), None) # Write High
+        self.gateOutDriver.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(1), None)  # Write High
         # Device 1 Digital Input
         self.gateTrigger.StartTask()
         # Device 3 Digital Output
         self.lickSwapper.StartTask()
-        self.lickSwapper.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None) # Write LOW
+        self.lickSwapper.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None)  # Write LOW
         self.sucroseDriver.StartTask()
-        self.sucroseDriver.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None) # Write LOW
+        self.sucroseDriver.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None)  # Write LOW
         self.waterDriver.StartTask()
-        self.waterDriver.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None) # Write LOW
+        self.waterDriver.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None)  # Write LOW
         # Device 3 Digital Input
         self.attemptSucrose.StartTask()
         self.attemptWater.StartTask()

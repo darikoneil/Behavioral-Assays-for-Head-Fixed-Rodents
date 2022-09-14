@@ -5,6 +5,8 @@ from BurrowPreferenceMachine import BurrowPreferenceTask
 from LickBehaviorConfigurations import BurrowPreferenceConfig
 from HardwareConfiguration import HardConfig
 
+from SaveModule import Saver, Pickler
+
 import sys
 from ctypes import byref
 import numpy as np
@@ -19,7 +21,7 @@ class DAQtoBurrow(Task):
     """
     Instance Factory for DAQ to Burrow interface
     """
-    def __init__(self):
+    def __init__(self, *args):
         Task.__init__(self)
 
         # internal variables
@@ -30,9 +32,13 @@ class DAQtoBurrow(Task):
         self.habituation_complete = False
         self.preference_complete = False
         self.saving_complete = False
+        self.behavior_complete = False
 
         # Import Burrow Preference Configuration
-        self.burrow_preference_config = BurrowPreferenceConfig()
+        if args:
+            self.burrow_preference_config = BurrowPreferenceConfig(args[0])
+        else:
+            self.burrow_preference_config = BurrowPreferenceConfig()
 
         # Import Hardware Configuration
         _hardware_config = HardConfig()
@@ -173,8 +179,27 @@ class DAQtoBurrow(Task):
         self.bufferedAnalogDataToSave = np.array(self.DAQAnalogInBuffer.copy(), dtype=np.float64)
         self.bufferedStateToSave = np.array(['0'], dtype=str)
 
+        # DAQ Callback Tracking (usually commented out)
+        self.daq_catch_times = []
+        self.daq_catch_times_saver = Saver()
+        self.daq_catch_times_saver.filename = self.burrow_preference_config.data_path + "\\daq_catch_times.npy"
+
+        self.save_module_analog = Saver()
+        self.save_module_analog.filename = self.burrow_preference_config.data_path + "\\analog.npy"
+        self.save_module_state = Saver()
+        self.save_module_state.filename = self.burrow_preference_config.data_path + "\\state.npy"
+        self.save_module_config = Pickler()
+        self.save_module_config.filename = self.burrow_preference_config.data_path + "\\behavior_config"
+
+        # We don't care enough let's just keep the attribute space clean for coding purposes
+        _save_module_hardware = Pickler()
+        _save_module_hardware.filename = self.burrow_preference_config.data_path + "\\hardware_config"
+        _ = _save_module_hardware.timeToSave()
+        _save_module_hardware = None # Is this necessary lmao
+
     def EveryNCallback(self):
         self.burrow_preference_machine.proceed_sync = True
+        _start_time = time()
 
         # Read Device 1 Analog Inputs
         self.ReadAnalogF64(self.bufferSize, self.timeout, DAQmx_Val_GroupByChannel, self.DAQAnalogInBuffer,
@@ -183,10 +208,26 @@ class DAQtoBurrow(Task):
         self.grabbedAnalogBuffer = self.DAQAnalogInBuffer.copy()  # Grab the buffer now and make NI drivers happy if we have any lags
         self.totNumBuffers += 1
 
-        self.bufferedAnalogDataToSave = np.append(self.bufferedDataToSave, self.grabbedAnalogBuffer, axis=1)
+        if self.current_state != self.burrow_preference_machine.state:
+            self.current_state = self.burrow_preference_machine.state
+            self.update_behavior()
+
+            if self.current_state == "Saving":
+                self.save_data()
+                self.burrow_preference_machine.saving_complete = True
+
+            if self.current_state == "End":
+                self.behavior_complete = True
+
+        self.bufferedAnalogDataToSave = np.append(self.bufferedAnalogDataToSave, self.grabbedAnalogBuffer, axis=1)
         self.bufferedStateToSave = np.append(self.bufferedStateToSave, self.current_state)
 
         self.burrow_preference_machine.proceed_sync = False
+
+        _catch_time = (time()-_start_time)*1000
+        self.daq_catch_times.append(_catch_time)
+
+        # print("".join(["This iteration was ", str(_catch_time), " milliseconds"]))
 
         return 0
 
@@ -220,7 +261,27 @@ class DAQtoBurrow(Task):
         self.ClearTask()
 
     def save_data(self):
-        return
+        print("Saving Analog Data...")
+        self.save_module_analog.bufferedData = self.bufferedAnalogDataToSave.copy()
+        _ = self.save_module_analog.timeToSave()
+
+        print("Saving State Data...")
+        self.save_module_state.bufferedData = self.bufferedStateToSave.copy()
+        _ = self.save_module_state.timeToSave()
+
+        print("Saving Config Data...")
+        self.save_module_config.pickledPickles = self.burrow_preference_config
+        _ = self.save_module_config.timeToSave()
+
+        # Save DAQ Catch Times (usually commented out)
+        print("Saving DAQ Catch Times...")
+        self.daq_catch_times_saver.bufferedData = self.daq_catch_times
+        _ = self.daq_catch_times_saver.timeToSave()
+
+    def update_behavior(self):
+        self.habituation_complete = self.burrow_preference_machine.habituation_complete
+        self.preference_complete = self.burrow_preference_machine.preference_complete
+        self.saving_complete = self.burrow_preference_machine.saving_complete
 
     def startAcquisition(self):
         self.StartTask() # Device 1 - Analog Inputs (Master Clock!!!)
