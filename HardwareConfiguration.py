@@ -42,7 +42,6 @@ class HardConfig:
             "J1": "J1 L293D VCC1 Logic Power connects to IO 31 5V Source on Device 3",
             "C28": "C28 to L293D VVC2 Power D8",
             "E28": "E28 to 12V Power",
-            "E29": "E29 to 12V Ground A",
             "E30": "E30 to 12V Ground B",
             "J13": "J13 to Lick Swapper Motor Ground",
             "J14": "J14 to Lick Swapper Motor Power",
