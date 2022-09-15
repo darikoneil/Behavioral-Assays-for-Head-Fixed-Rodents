@@ -25,10 +25,12 @@ class BehavCam(Thread):
         self.video = []
         self.currentTrial = 1
         self.unsaved = bool(1)
-        self.fileprefix = "C:\\Users\\YUSTE\\Desktop\\"
+        self.file_prefix = "C:\\Users\\YUSTE\\Desktop\\"
         self.filename1 = []
         self.filename2 = []
+        self.filename3 = []
         self.bufferNum = []
+        self.currentBuffer = []
         self.isRunning1 = False
         self.isRunning2 = False
         Thread.__init__(self)
@@ -54,6 +56,7 @@ class BehavCam(Thread):
                             if self.is_recording_time:
                                 self.runFrames.append(frame)
                                 self.runFramesIDs.append(self.currentTrial)
+                                self.bufferNum.append(self.currentBuffer)
                         elif self.isRunning1:
                             frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
                             cv.imshow(self.window_name, frame)
@@ -61,6 +64,7 @@ class BehavCam(Thread):
                             if self.is_recording_time:
                                 self.runFrames.append(frame)
                                 self.runFramesIDs.append(self.currentTrial)
+                                self.bufferNum.append(self.currentBuffer)
                         elif self.shutdown_mode:
                             break
                     else:
@@ -72,15 +76,17 @@ class BehavCam(Thread):
                     cv.waitKey(1) & 0xFF
                     if self.unsaved:
                         self.unsaved = True
-                        self.filename1 = self.fileprefix + "_Frame.npy"
-                        self.filename2 = self.fileprefix + "_FramesIDS.npy"
-                        np.save(self.filename1, self.runFrames, allow_pickle=True)
+                        self.filename1 = self.file_prefix + "_Frame.npy"
+                        self.filename2 = self.file_prefix + "_FramesIDS.npy"
+                        self.filename3 = self.file_prefix + "_BufferIDs.npy"
+                        np.save(self.filename3, self.bufferNum, allow_pickle=True)
+                        print(self.window_name + "Buffer IDs Saved")
                         np.save(self.filename2, self.runFramesIDs, allow_pickle=True)
-                        print(self.window_name + "Frames Saved")
                         print(self.window_name + "Frames IDs Saved")
+                        np.save(self.filename1, self.runFrames, allow_pickle=True)
+                        print(self.window_name + "Frames Saved")
+                        self.unsaved = False
                         return
-
-
 
 
 if __name__ == '__main__':

@@ -92,6 +92,9 @@ class DAQtoBurrow(Task):
         self.gateOutDriver = Task()
         self.gateOutDriver.CreateDOChan(_hardware_config.gateOutDriveChannel, "Gate Drive Out", DAQmx_Val_ChanForAllLines)
 
+        self.trialFlagger = Task()
+        self.trialFlagger.CreateDOChan(_hardware_config.trialFlaggerChannel, "Trial Flagger", DAQmx_Val_ChanForAllLines)
+
         # Setup DAQ - Device 1 - Instance Digital Inputs
         # | Gate Trigger Input
         self.gateTrigger = Task()  # Instance Gate Trigger Digital In Task Object
@@ -281,8 +284,8 @@ class DAQtoBurrow(Task):
 
             self.master_camera.cam_1.currentTrial = self.current_state
             self.master_camera.cam_2.currentTrial = self.current_state
-            self.master_camera.cam_1.bufferNum.append(self.totNumBuffers-1)
-            self.master_camera.cam_2.bufferNum.append(self.totNumBuffers-1)
+            self.master_camera.cam_1.currentBuffer = self.totNumBuffers-1
+            self.master_camera.cam_2.currentBuffer = self.totNumBuffers-1
 
         # Throw Signals to GUI
         myapp.catchSignals.emit()
@@ -346,10 +349,15 @@ class DAQtoBurrow(Task):
             print("Saving Camera 1...")
             self.master_camera.cam_1.isRunning1 = False
             self.master_camera.cam_1.shutdown_mode = True
+            while self.master_camera.cam_1.unsaved:
+                continue
             print("Saving Camera 2...")
             self.master_camera.cam_2.isRunning2 = False
             self.master_camera.cam_2.shutdown_mode = True
+            while self.master_camera.cam_2.unsaved:
+                continue
             self.task_percentage = 100
+            self.DAQ.clearDAQ()
         myapp.update_progress_bar.emit()
 
     def update_behavior(self):
@@ -378,14 +386,23 @@ class DAQtoBurrow(Task):
         self.attemptWater.StartTask()
         self.lickedSucrose.StartTask()
         self.lickedWater.StartTask()
+        self.trialFlagger.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None) # Write LOW
 
     def startBehavior(self):
         self.burrow_preference_machine.start()
 
+    def process_gate_sensor(self):
+        # dummy var to find the max & flip 0 to 1 // 1 to 0 (Hardware Open Collector Configuration)
+        _gateData = np.array(self.DAQ.grabbedGateTriggerBuffer)
+        if int(abs(_gateData.max() - 1)) == 1:
+            self.trialFlagger.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(5), None)
+        else:
+            self.trialFlagger.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None)
+
     def startCamera(self):
         self.master_camera.start()
-        self.master_camera.cam_1.file_prefix = self.burrow_preference_config.data_path + self.burrow_preference_config.animal_id + "\\" + self.burrow_preference_config.animal_id + "_cam1_"
-        self.master_camera.cam_2.file_prefix = self.burrow_preference_config.data_path + self.burrow_preference_config.animal_id + "\\" + self.burrow_preference_config.animal_id + "_cam2_"
+        self.master_camera.cam_1.file_prefix = "".join([self.burrow_preference_config.data_path, "\\", "_cam1_"])
+        self.master_camera.cam_2.file_prefix = "".join([self.burrow_preference_config.data_path, "\\", "_cam2_"])
         self.cameras_on = True
         return
 

@@ -17,6 +17,8 @@ def test_run_machine():
     assert(BPT.state == "Setup")
     assert(BPT.start_run is True)
     BPT.start()
+    while BPT.state != "End":
+        continue
     assert(BPT.proceed_sync is True)
     assert(BPT.habituation_complete is True)
     assert(BPT.preference_complete is True)
@@ -39,6 +41,8 @@ def test_machine_vars():
     BPT.proceed_sync = True
     BPT.saving_complete = True
     BPT.start()
+    while BPT.state != "End":
+        pass
     assert(BPT.habituation_duration == Config.habituation_duration)
     assert(BPT.behavior_duration == Config.behavior_duration)
     assert(BPT.animal_id == Config.animal_id)

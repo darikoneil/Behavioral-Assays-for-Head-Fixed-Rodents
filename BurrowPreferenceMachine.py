@@ -72,21 +72,23 @@ class BurrowPreferenceTask(Thread):
         while True:
             if self.state is 'Setup':
                 if self.start_run:
-                    # print("Transitioning from Setup to Habituation\n")
+                    # print("Transitioning from Setup to Retract\n")
                     self.startBehavior()
             elif self.state is 'Retract':
                 self.stage_time = time()
                 if self.checkStageTime(self.stage_time, self.retract_end):
+                    # print("Transitioning from Retraction to Habituation\n")
                     self.graduateRetraction()
             elif self.state is 'Habituation':
                 self.stage_time = time()
                 if self.checkStageTime(self.stage_time, self.hab_end):
                     self.habituation_complete = True
-                    # print("Transitioning from Habituation to Preference\n")
+                    # print("Transitioning from Habituation to Release\n")
                     self.graduateHabituation()
             elif self.state is 'Release':
                 self.stage_time = time()
                 if self.checkStageTime(self.stage_time, self.release_end):
+                    # print("Transitioning from Release to Preference\n")
                     self.graduateRelease()
             elif self.state is 'PreferenceTest':
                 self.stage_time = time()
@@ -131,7 +133,9 @@ class BurrowPreferenceTask(Thread):
 
 
 if __name__ == "__main__":
-    BPT = BurrowPreferenceTask()
+    from testing_utility_functions import load_pickle_from_file
+    from os import getcwd
+    BPT = BurrowPreferenceTask(load_pickle_from_file("".join([getcwd(), "\\", "Test_Mouse.pkl"])))
     BPT.start_run = True
     BPT.proceed_sync = True
     BPT.saving_complete = True
