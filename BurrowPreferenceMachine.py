@@ -20,14 +20,24 @@ class BurrowPreferenceTask(Thread):
             print("Unable to initialize with invalid configuration!")
             return
 
-            # Internal
+        # Internal
         self.proceed_sync = False
         self.start_run = False
         self.stage_time = float()
 
+        # Retract
+        self.retract_start = float()
+        self.retract_duration = 5
+        self.retract_end = float()
+
         # Habituation
         self.hab_start = float()
         self.hab_end = float()
+
+        # Release
+        self.release_start = float()
+        self.release_end = float()
+        self.release_duration = 5
 
         # Preference Test
         self.pref_start = float()
@@ -38,11 +48,16 @@ class BurrowPreferenceTask(Thread):
         self.preference_complete = False
         self.saving_complete = False
 
-        self.states = ['Setup', 'Habituation', 'PreferenceTest', 'Saving', 'End']
+        self.states = ['Setup', 'Retract', 'Habituation', 'Release', 'PreferenceTest', 'Saving', 'End']
 
         self.transitions = [
-            {'trigger': 'startBehavior', 'source': 'Setup', 'dest': 'Habituation', 'before': 'initializeHabituation'},
-            {'trigger': 'graduateHabituation', 'source': 'Habituation', 'dest': 'PreferenceTest',
+            {'trigger': 'startBehavior', 'source': 'Setup', 'dest': 'Retract', 'before': 'initializeRetract',
+             'conditions': 'allowedToProceed'},
+            {'trigger': 'graduateRetraction', 'source': 'Retract', 'dest': 'Habituation',
+             'before': 'initializeHabituation', 'conditions': 'allowedToProceed'},
+            {'trigger': 'graduateHabituation', 'source': 'Habituation', 'dest': 'Release',
+             'before': 'initializeRelease', 'conditions': 'allowedToProceed'},
+            {'trigger': 'graduateRelease', 'source': 'Release', 'dest': 'PreferenceTest',
              'before': 'initializePreference', 'conditions': 'allowedToProceed'},
             {'trigger': 'graduatePreference', 'source': 'PreferenceTest', 'dest': 'Saving',
              'conditions': 'allowedToProceed'},
@@ -59,12 +74,20 @@ class BurrowPreferenceTask(Thread):
                 if self.start_run:
                     # print("Transitioning from Setup to Habituation\n")
                     self.startBehavior()
+            elif self.state is 'Retract':
+                self.stage_time = time()
+                if self.checkStageTime(self.stage_time, self.retract_end):
+                    self.graduateRetraction()
             elif self.state is 'Habituation':
                 self.stage_time = time()
                 if self.checkStageTime(self.stage_time, self.hab_end):
                     self.habituation_complete = True
                     # print("Transitioning from Habituation to Preference\n")
                     self.graduateHabituation()
+            elif self.state is 'Release':
+                self.stage_time = time()
+                if self.checkStageTime(self.stage_time, self.release_end):
+                    self.graduateRelease()
             elif self.state is 'PreferenceTest':
                 self.stage_time = time()
                 if self.checkStageTime(self.stage_time, self.pref_end):
@@ -91,6 +114,14 @@ class BurrowPreferenceTask(Thread):
         self.pref_start = time()
         self.pref_end = self.pref_start + self.behavior_duration
 
+    def initializeRetract(self):
+        self.retract_start = time()
+        self.retract_end = self.retract_start + self.retract_duration
+
+    def initializeRelease(self):
+        self.release_start = time()
+        self.release_end = self.release_start + self.release_duration
+
     @staticmethod
     def checkStageTime(stagetime, stageend):
         if stagetime < stageend:
@@ -103,5 +134,6 @@ if __name__ == "__main__":
     BPT = BurrowPreferenceTask()
     BPT.start_run = True
     BPT.proceed_sync = True
+    BPT.saving_complete = True
     print("Burrow Preference Task Instantiated\n")
     BPT.start()

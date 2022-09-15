@@ -260,7 +260,7 @@ class DAQtoBurrow(Task):
                 self.task_percentage = self.calculate_percentage_complete(self.burrow_preference_machine.hab_start,
                                                                           self.burrow_preference_machine.stage_time,
                                                                           self.burrow_preference_machine.hab_end)
-            elif self.current_state == "Preference":
+            elif self.current_state == "PreferenceTest":
                 self.task_percentage = self.calculate_percentage_complete(self.burrow_preference_machine.pref_start,
                                                                           self.burrow_preference_machine.stage_time,
                                                                           self.burrow_preference_machine.pref_end)
@@ -349,6 +349,8 @@ class DAQtoBurrow(Task):
             print("Saving Camera 2...")
             self.master_camera.cam_2.isRunning2 = False
             self.master_camera.cam_2.shutdown_mode = True
+            self.task_percentage = 100
+        myapp.update_progress_bar.emit()
 
     def update_behavior(self):
         self.habituation_complete = self.burrow_preference_machine.habituation_complete
