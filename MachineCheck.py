@@ -42,7 +42,7 @@ def test_machine_vars():
     BPT.saving_complete = True
     BPT.start()
     while BPT.state != "End":
-        pass
+        continue
     assert(BPT.habituation_duration == Config.habituation_duration)
     assert(BPT.behavior_duration == Config.behavior_duration)
     assert(BPT.animal_id == Config.animal_id)
