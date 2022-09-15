@@ -1,4 +1,4 @@
-# LickingBehavior
+# A Collection of Burrow-Based Licking Behaviors
 
 Dependencies not included in environment file   
 
@@ -21,3 +21,18 @@ conda env create -f environment.yml
 4. Hardware, wiring, and IO configuration described within HardwareConfiguration.py
 
 5. C++ scripts must be uploaded to appropriate microcontrollers. Pytest does not handle these & the included PyCharm project meta does not add an external compiler or uploader. This is can be added by editing the project configuration & entering arduino_debug.exe as an external tool. [See here for details.](https://samclane.dev/Pycharm-Arduino/)
+
+## Behaviors
+
+### Burrow Preference
+Anxiolytic assessment comparing the balance of burrowing and exploratory behavior
+
+### Sucrose Preference
+Anhedonia assessment comparing the consumption of sugar-water & water
+
+### Simple Discrimination Test
+Cognitive assay assessing reward learning
+
+### Reversal Test
+Cognitive assay assessing behavioral flexibility
+
