@@ -6,6 +6,7 @@ from PyQt6 import QtGui, QtCore, Qt, QtWidgets
 from BurrowPreference_Real_GUI import Ui_MainWindow
 from BurrowPreferenceMachine import BurrowPreferenceTask
 from LickBehaviorConfigurations import BurrowPreferenceConfig
+from BehavioralCamera_Master import BehavCamMaster
 from HardwareConfiguration import HardConfig
 from SaveModule import Saver, Pickler
 
@@ -34,6 +35,7 @@ class DAQtoBurrow(Task):
         self.current_state = "Dummy"
         self.cameras_on = False
         self.task_percentage = 0
+        self.progress_period = 10
 
         # Indicators for States
         self.habituation_complete = False
@@ -185,6 +187,7 @@ class DAQtoBurrow(Task):
 
         # Prep Data Buffers
         self.bufferedAnalogDataToSave = np.array(self.DAQAnalogInBuffer.copy(), dtype=np.float64)
+        self.bufferedDigitalDataToSave = np.array(self.gateTrigger.readData.copy(), dtype=np.uint8)
         self.bufferedStateToSave = np.array(['0'], dtype=str)
 
         # DAQ Callback Tracking (usually commented out)
@@ -196,6 +199,8 @@ class DAQtoBurrow(Task):
         self.save_module_analog.filename = self.burrow_preference_config.data_path + "\\analog.npy"
         self.save_module_state = Saver()
         self.save_module_state.filename = self.burrow_preference_config.data_path + "\\state.npy"
+        self.save_module_digital = Saver()
+        self.save_module_digital.filename = self.burrow_preference_config.data_path + "\\digital.npy"
         self.save_module_config = Pickler()
         self.save_module_config.filename = self.burrow_preference_config.data_path + "\\behavior_config"
 
@@ -205,16 +210,32 @@ class DAQtoBurrow(Task):
         _ = _save_module_hardware.timeToSave()
         _save_module_hardware = None # Is this necessary lmao
 
+        # Cameras
+        self.master_camera = BehavCamMaster()
+
     def EveryNCallback(self):
         self.burrow_preference_machine.proceed_sync = True
-        _start_time = time()
+
+        # _start_time = time()
 
         # Read Device 1 Analog Inputs
         self.ReadAnalogF64(self.bufferSize, self.timeout, DAQmx_Val_GroupByChannel, self.DAQAnalogInBuffer,
                            self.numSamplesPerBlock, byref(self.units), None)
 
         self.grabbedAnalogBuffer = self.DAQAnalogInBuffer.copy()  # Grab the buffer now and make NI drivers happy if we have any lags
+
+        # Read Device 1 Digital Inputs
+        self.gateTrigger.ReadDigitalLines(self.gateTrigger.numSampsPerChan, self.timeout, self.gateTrigger.fillMode,
+                                          self.gateTrigger.readData, self.gateTrigger.arraySizeInBytes,
+                                          self.gateTrigger.sampsPerChanRead, byref(self.gateTrigger.numBytesPerSamp),
+                                          None)
+
+        self.grabbedGateTriggerBuffer = self.gateTrigger.readData.copy()
+
+        # Count Total Buffers
         self.totNumBuffers += 1
+
+        # Parse States
 
         if self.current_state != self.burrow_preference_machine.state:
             self.current_state = self.burrow_preference_machine.state
@@ -231,13 +252,39 @@ class DAQtoBurrow(Task):
 
         self.bufferedAnalogDataToSave = np.append(self.bufferedAnalogDataToSave, self.grabbedAnalogBuffer, axis=1)
         self.bufferedStateToSave = np.append(self.bufferedStateToSave, self.current_state)
+        self.bufferedDigitalDataToSave = np.append(self.bufferedDigitalDataToSave, self.grabbedGateTriggerBuffer, axis=0)
 
+        # Determine if updating progress bar
+        if (self.totNumBuffers % self.progress_period) == 0:
+            if self.current_state == "Habituation":
+                self.task_percentage = self.calculate_percentage_complete(self.burrow_preference_machine.hab_start,
+                                                                          self.burrow_preference_machine.stage_time,
+                                                                          self.burrow_preference_machine.hab_end)
+            elif self.current_state == "Preference":
+                self.task_percentage = self.calculate_percentage_complete(self.burrow_preference_machine.pref_start,
+                                                                          self.burrow_preference_machine.stage_time,
+                                                                          self.burrow_preference_machine.pref_end)
+            else:
+                pass
+            myapp.update_progress_bar.emit()
 
-        _catch_time = (time()-_start_time)*1000
-        self.daq_catch_times.append(_catch_time)
+        # _catch_time = (time()-_start_time)*1000
+        # self.daq_catch_times.append(_catch_time)
 
         # print("".join(["This iteration was ", str(_catch_time), " milliseconds"]))
 
+        # Record Camera Data
+        if self.cameras_on:
+            if self.master_camera.cam_1.is_recording_time != self.habituation_complete:
+                self.master_camera.cam_1.is_recording_time = True
+                self.master_camera.cam_2.is_recording_time = True
+
+            self.master_camera.cam_1.currentTrial = self.current_state
+            self.master_camera.cam_2.currentTrial = self.current_state
+            self.master_camera.cam_1.bufferNum.append(self.totNumBuffers-1)
+            self.master_camera.cam_2.bufferNum.append(self.totNumBuffers-1)
+
+        # Throw Signals to GUI
         myapp.catchSignals.emit()
 
         self.burrow_preference_machine.proceed_sync = False
@@ -278,6 +325,10 @@ class DAQtoBurrow(Task):
         self.save_module_analog.bufferedData = self.bufferedAnalogDataToSave.copy()
         _ = self.save_module_analog.timeToSave()
 
+        print("Saving Digital Data...")
+        self.save_module_digital.bufferedData = self.bufferedDigitalDataToSave.copy()
+        _ = self.save_module_digital.timeToSave()
+
         print("Saving State Data...")
         self.save_module_state.bufferedData = self.bufferedStateToSave.copy()
         _ = self.save_module_state.timeToSave()
@@ -290,6 +341,14 @@ class DAQtoBurrow(Task):
         print("Saving DAQ Catch Times...")
         self.daq_catch_times_saver.bufferedData = self.daq_catch_times
         _ = self.daq_catch_times_saver.timeToSave()
+
+        if self.cameras_on:
+            print("Saving Camera 1...")
+            self.master_camera.cam_1.isRunning1 = False
+            self.master_camera.cam_1.shutdown_mode = True
+            print("Saving Camera 2...")
+            self.master_camera.cam_2.isRunning2 = False
+            self.master_camera.cam_2.shutdown_mode = True
 
     def update_behavior(self):
         self.habituation_complete = self.burrow_preference_machine.habituation_complete
@@ -322,6 +381,10 @@ class DAQtoBurrow(Task):
         self.burrow_preference_machine.start()
 
     def startCamera(self):
+        self.master_camera.start()
+        self.master_camera.cam_1.file_prefix = self.burrow_preference_config.data_path + self.burrow_preference_config.animal_id + "\\" + self.burrow_preference_config.animal_id + "_cam1_"
+        self.master_camera.cam_2.file_prefix = self.burrow_preference_config.data_path + self.burrow_preference_config.animal_id + "\\" + self.burrow_preference_config.animal_id + "_cam2_"
+        self.cameras_on = True
         return
 
     def startAll(self):
@@ -329,12 +392,17 @@ class DAQtoBurrow(Task):
         self.startBehavior()
         self.burrow_preference_machine.start_run = True
 
+    @staticmethod
+    def calculate_percentage_complete(start, current, end):
+        return ((current-start)/(end-start))*100
+
 
 class MasterGUI(QtWidgets.QMainWindow):
 
     catchSignals = QtCore.pyqtSignal()
     drawSignals = QtCore.pyqtSignal()
     updateStateSignals = QtCore.pyqtSignal()
+    update_progress_bar = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
@@ -347,6 +415,7 @@ class MasterGUI(QtWidgets.QMainWindow):
         self.catchSignals.connect(self.catchingSignals)
         self.drawSignals.connect(self.drawingSignals)
         self.updateStateSignals.connect(self.updateBehavior)
+        self.update_progress_bar.connect(self.updateProgressBars)
 
         # Instance DAQ
         self.DAQ = DAQtoBurrow()
@@ -408,6 +477,9 @@ class MasterGUI(QtWidgets.QMainWindow):
         self.ui.sync_image_indicator.setPalette(self.RED)
         self.ui.data_saved_indicator.setPalette(self.RED)
 
+        # Initialize Motor Control
+        self.ui.motor_controller.valueChanged.connect(self.moveMotor)
+
         # Initiate DAQ Acquisition
         try:
             self.DAQ.startAcquisition()
@@ -443,13 +515,18 @@ class MasterGUI(QtWidgets.QMainWindow):
 
     def drawingSignals(self):
         self.updatePlots()
-        self.updateProgressBars()
 
     def updatePlots(self):
         self.motor_data_item.setData(self.plottingTimeVector, self.plottingMotor)
 
     def updateBehavior(self):
         self.ui.currrent_stage_var.setText(self.DAQ.current_state)
+
+        if self.DAQ.current_state == "Retract":
+            self.retractMotor()
+
+        if self.DAQ.current_state == "Release":
+            self.releaseMotor()
 
         if self.saving_complete != self.DAQ.saving_complete:
             self.ui.data_saved_indicator.setPalette(self.GREEN)
@@ -497,6 +574,18 @@ class MasterGUI(QtWidgets.QMainWindow):
         self.DAQ.clearDAQ()
         self.close()
         return
+
+    def retractMotor(self):
+        self.ui.motor_controller.setValue(0)
+
+    def releaseMotor(self):
+        self.ui.motor_controller.setValue(100)
+
+    def moveMotor(self):
+        _sliderValue = np.float64(self.ui.motor_controller.value()*(self.DAQ.motorVoltageRange[1]/self.ui.motor_controller.maximum()))
+        self.DAQ.motorOut.WriteAnalogF64(self.DAQ.motorOut.numSamples, np.bool_(1),
+                                         self.DAQ.timeout, DAQmx_Val_GroupByChannel, np.array([_sliderValue]),
+                                         self.DAQ.motorOut.units, None)
 
 
 # Execute if Main Module

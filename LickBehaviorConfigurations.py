@@ -11,13 +11,13 @@ class BurrowPreferenceConfig:
         self.validated = False
 
         # General Parameters (Protected with no single setters)
-        self._animal_id = "Darik"
+        self._animal_id = "Darik_2"
         self._base_path = getcwd() # or manually enter a filepath
         self._data_path = "".join([self.base_path, "\\", self.animal_id])
 
         # Behavior Parameters
-        self._habituation_duration = 30 # Habituation duration in seconds, integer
-        self._behavior_duration = 30 # Burrow preference duration in seconds, integer
+        self._habituation_duration = 5 # Habituation duration in seconds, integer
+        self._behavior_duration = 10 # Burrow preference duration in seconds, integer
 
         # Make the data folder - SHOULD NOT EXIST
         try:
