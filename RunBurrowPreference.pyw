@@ -210,8 +210,8 @@ class DAQtoBurrow(Task):
         # We don't care enough let's just keep the attribute space clean for coding purposes
         _save_module_hardware = Pickler()
         _save_module_hardware.filename = self.burrow_preference_config.data_path + "\\hardware_config"
+        _save_module_hardware.pickledPickles = _hardware_config
         _ = _save_module_hardware.timeToSave()
-        _save_module_hardware = None # Is this necessary lmao
 
         # Cameras
         self.master_camera = BehavCamMaster()
