@@ -1,5 +1,5 @@
 from os import mkdir, getcwd
-from TypeCheck import test_burrow_preference_config, test_sucrose_preference_config
+from TypeCheck import test_burrow_preference_config
 
 
 class BurrowPreferenceConfig:
@@ -125,10 +125,10 @@ class SucrosePreferenceConfig:
 
         # Behavior Parameters
         self._habituation_duration = 5 # Habituation duration in seconds, integer
-        self._preference_trial_duration = 5 # Sucrose preference duration in seconds, integer
-        self._num_preference_trials = 5 # Number of sucrose preference trials
         self._single_lick_volume = 3 # liquid dispensed in response to single lick (uL)
         self._max_liquid_intake =  1 # upper limit of total liquid consumption (mL)
+        self._licks_per_trial = 30 # Number of licks per trial
+
 
         # Make the data folder - SHOULD NOT EXIST
         try:
@@ -197,51 +197,6 @@ class SucrosePreferenceConfig:
         return self._habituation_duration/60
 
     @property
-    def preference_trial_duration(self):
-        """
-        Duration of sucrose preferece in seconds
-        
-        :rtype: int
-        """
-        return self._preference_trial_duration
-
-    @property
-    def preference_trial_duration_minutes(self):
-        """
-        Duration of sucrose preference in minutes
-        
-        :rtype: int
-        """
-        return self._preference_trial_duration/60
-
-    @property
-    def num_preference_trial(self):
-        """
-        Number of sucrose preference trials
-        
-        :rtype: int
-        """
-        return self._num_preference_trials
-
-    @property
-    def preference_duration_total(self):
-        """
-        Total duration of sucrose preference in seconds
-
-        :rtype: int
-        """
-        return self._num_preference_trials*self._preference_trial_duration
-
-    @property
-    def preference_duration_total(self):
-        """
-        Total duration of sucrose preference in minutes
-
-        :rtype: int
-        """
-        return self._num_preference_trials*self._preference_trial_duration/60
-
-    @property
     def single_lick_volume(self):
         """
         Volume of liquid release upon single lick in microliters
@@ -260,13 +215,40 @@ class SucrosePreferenceConfig:
         return self._max_liquid_intake
 
     @property
-    def number_of_licks_allowed(self):
+    def total_licks_allowed(self):
         """
         Number of licks permitted before eaching maximum liquid intake
 
         :rtype: int
         """
         return self._max_liquid_intake*1000/self._single_lick_volume
+
+    @property
+    def num_preference_trial(self):
+        """
+        Number of sucrose preference trials
+        
+        :rtype: int
+        """
+        return self.total_licks_allowed/self._licks_per_trial
+
+    @property
+    def volume_per_trial(self):
+        """
+        Liquid dispensed per trial in uL
+
+        :rtype: int
+        """
+        return self._licks_per_trial*self.single_lick_volume
+
+    @property
+    def licks_per_trial(self):
+        """
+        Number of licks per trial
+
+        :rtype: int
+        """
+        return self._licks_per_trial
 
     def validation(self):
         try:
@@ -290,8 +272,7 @@ if __name__ == '__main__':
     print("".join(["Base Directory: ", SPC.base_path]))
     print("".join(["Data Folder: ", SPC.data_path]))
     print("".join(["Habituation Duration: ", str(SPC.habituation_duration)]))
-    print("".join(["Preference Duration: ", str(SPC.preference_duration)]))
-    print("".join(["Number of Preference Trials: ", str(SPC.num_preference_trial)]))
+    print("".join(["Licks Per Trial: ", str(SPC.licks_per_trial)]))
     print("".join(["Lick Volume: ", str(SPC.single_lick_volume)]))
     print("".join(["Maximal Intake: ", str(SPC.max_liquid_intake)]))
     print("".join(["Configuration Validated: ", str(SPC.validated)]))
