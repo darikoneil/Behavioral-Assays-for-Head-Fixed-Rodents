@@ -92,7 +92,7 @@ python RespectiveBehavioralScript.pyw
 
 7. Start behavior using *Start* button.
 
-8. After "End" is displayed in the behavioral stage, it is safe to press the *close* button.    
+8. After "End" is displayed in the behavioral stage, it is safe to press the *Close* button.    
 
 ## Dictionary of Behavioral Scripts     
 
