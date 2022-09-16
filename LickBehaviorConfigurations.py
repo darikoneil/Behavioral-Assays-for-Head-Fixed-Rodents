@@ -128,7 +128,7 @@ class SucrosePreferenceConfig:
         self._single_lick_volume = 3 # liquid dispensed in response to single lick (uL)
         self._max_liquid_intake =  1 # upper limit of total liquid consumption (mL)
         self._licks_per_trial = 30 # Number of licks per trial
-
+        self._swap_index = self.generate_swap_order(self.num_preference_trial)
 
         # Make the data folder - SHOULD NOT EXIST
         try:
@@ -250,6 +250,13 @@ class SucrosePreferenceConfig:
         """
         return self._licks_per_trial
 
+    @property
+    def swap_index(self):
+        """
+        Order for lick spout swapping
+        """
+        return self._swap_index
+
     def validation(self):
         try:
             test_sucrose_preference_config(self)
@@ -257,6 +264,11 @@ class SucrosePreferenceConfig:
         except RuntimeError:
             return False
 
+    @staticmethod
+    def generate_swap_order(num_trials):
+        swap_index = np.append(np.full(int(np.ceil(num_trials)), 1, dtype=int), np.full(int(np.floor(num_trials))))
+        np.random.shuffle(swap_index)
+        return swap_index
 
 if __name__ == '__main__':
     BPC = BurrowPreferenceConfig()
