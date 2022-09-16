@@ -37,3 +37,47 @@ def cleanup_burrow_preference_config(BasePath):
     _dir = "".join([BasePath, "\\", "Test_Mouse"])
     if path.exists(_dir):
         rmtree(_dir)
+
+def test_burrow_preference_config(*args):
+    """
+    This function tests validity & integrity of the sucrose preference configuration
+
+    :param args: To pass a specific burrow_config use the key sucrose_preference_config
+    :rtype: None
+    """
+
+    if args:
+        sucrose_preference_config = args[0]
+    else:
+        from LickBehaviorConfigurations import SucrosePreferenceConfig
+        sucrose_preference_config = SucrosePreferenceConfig()
+    
+        # animal id
+    assert(isinstance(sucrose_preference_config.animal_id,  str))
+
+    # base path
+    assert(isinstance(sucrose_preference_config.base_path, str))
+
+    # data path
+    assert(isinstance(sucrose_preference_config.data_path, str))
+
+    # habituation duration
+    assert(isinstance(sucrose_preference_config.habituation_duration, int))
+
+    # preference duration
+    assert(isinstance(sucrose_preference_config.preference_trial_duration, int))
+
+    # number of preference trials
+    assert(isinstance(sucrose_preference_config.num_preference_trial, int))
+
+    # single lick vol
+    assert(isinstance(sucrose_preference_config.single_lick_volume, int))
+
+    # max lick vol
+    assert(isinstance(sucrose_preference_config.max_liquid_intake, int))
+
+def cleanup_sucrose_preference_config(BasePath):
+    from shutil import rmtree
+    _dir = "".join([BasePath, "\\", "Test_Mouse"])
+    if path.exists(_dir):
+        rmtree(_dir)
