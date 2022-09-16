@@ -64,17 +64,14 @@ def test_burrow_preference_config(*args):
     # habituation duration
     assert(isinstance(sucrose_preference_config.habituation_duration, int))
 
-    # preference duration
-    assert(isinstance(sucrose_preference_config.preference_trial_duration, int))
-
-    # number of preference trials
-    assert(isinstance(sucrose_preference_config.num_preference_trial, int))
-
     # single lick vol
     assert(isinstance(sucrose_preference_config.single_lick_volume, int))
 
     # max lick vol
     assert(isinstance(sucrose_preference_config.max_liquid_intake, int))
+
+    # licks per trial
+    assert(isinstance(sucrose_preference_config.licks_per_trial, int))
 
 def cleanup_sucrose_preference_config(BasePath):
     from shutil import rmtree
