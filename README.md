@@ -77,9 +77,9 @@ All behavioral tasks are implemented as finite state machines which interface wi
 
 2. Execute the respective behavioral script in the termnal of your anaconda environment.
 
-'''
+```
 python RespectiveBehavioralScript.pyw
-'''
+```
 
 3. Confirm that DAQ is functional via a green DAQ indicator     
 
