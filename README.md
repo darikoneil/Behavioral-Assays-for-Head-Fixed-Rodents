@@ -75,7 +75,7 @@ All behavioral tasks are implemented as finite state machines which interface wi
 1. Enter relevant behavioral parameters for the desired behavior in the LickBehaviorConfigurations.py file. 
 > Note that the attributes do not have setters and cannot be modified once initialized. This is for your own safety. I have not gotten to implementing a single-use setter function; change configuration directly in respective classes. Furthermore, mouse IDs must always be unique; the classes do not have the privelege to overwrite files. This is again for your own safety.
 
-2. Execute the respective behavioral script in the termnal of your anaconda environment.
+2. Execute the respective behavioral script in the terminal of your anaconda environment.
 
 ```
 python RespectiveBehavioralScript.pyw
