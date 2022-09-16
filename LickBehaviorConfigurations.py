@@ -11,13 +11,13 @@ class BurrowPreferenceConfig:
         self.validated = False
 
         # General Parameters (Protected with no single setters)
-        self._animal_id = "Mouse X"
+        self._animal_id = "BTest"
         self._base_path = getcwd() # or manually enter a filepath
         self._data_path = "".join([self.base_path, "\\", self.animal_id])
 
         # Behavior Parameters
         self._habituation_duration = 5 # Habituation duration in seconds, integer
-        self._behavior_duration = 10 # Burrow preference duration in seconds, integer
+        self._behavior_duration = 5 # Burrow preference duration in seconds, integer
 
         # Make the data folder - SHOULD NOT EXIST
         try:
@@ -77,6 +77,15 @@ class BurrowPreferenceConfig:
         return self._habituation_duration
 
     @property
+    def habituation_duration_minutes(self):
+        """
+        Duration of habituation in minutes
+
+        :rtype: int
+        """
+        return self._habituation_duration/60
+
+    @property
     def behavior_duration(self):
         """
         Duration of behavior in seconds
@@ -84,6 +93,15 @@ class BurrowPreferenceConfig:
         :rtype: int
         """
         return self._behavior_duration
+
+    @property
+    def behavior_duration_minutes(self):
+        """
+        Duration of behavior in minutes
+
+        :rtype: int
+        """
+        return self._behavior_duration/60
 
     def validation(self):
         try:
@@ -102,4 +120,3 @@ if __name__ == '__main__':
     print("".join(["Habituation Duration: ", str(BPC.habituation_duration)]))
     print("".join(["Behavior Duration: ", str(BPC.behavior_duration)]))
     print("".join(["Configuration Validated: ", str(BPC.validated)]))
-

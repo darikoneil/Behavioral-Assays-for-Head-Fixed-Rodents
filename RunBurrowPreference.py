@@ -35,7 +35,7 @@ class DAQtoBurrow(Task):
         self.current_state = "Dummy"
         self.cameras_on = False
         self.task_percentage = 0
-        self.progress_period = 10
+        self.progress_period = 1
 
         # Indicators for States
         self.habituation_complete = False
@@ -53,10 +53,7 @@ class DAQtoBurrow(Task):
         _hardware_config = HardConfig()
 
         # Instance Behavior
-        if args:
-            self.burrow_preference_machine = BurrowPreferenceTask(args[0])
-        else:
-            self.burrow_preference_machine = BurrowPreferenceTask()
+        self.burrow_preference_machine = BurrowPreferenceTask()
 
         # Setup DAQ - General DAQ Parameters - Put into class because might be iterated on
         self.timeout = _hardware_config.timeout  # timeout parameter must be type floating 64 (units: seconds, double)
@@ -96,6 +93,9 @@ class DAQtoBurrow(Task):
         self.gateOutDriver = Task()
         self.gateOutDriver.CreateDOChan(_hardware_config.gateOutDriveChannel, "Gate Drive Out",
                                         DAQmx_Val_ChanForAllLines)
+
+        self.trialFlagger = Task()
+        self.trialFlagger.CreateDOChan(_hardware_config.trialFlaggerChannel, "Trial Flagger", DAQmx_Val_ChanForAllLines)
 
         # Setup DAQ - Device 1 - Instance Digital Inputs
         # | Gate Trigger Input
@@ -215,8 +215,8 @@ class DAQtoBurrow(Task):
         # We don't care enough let's just keep the attribute space clean for coding purposes
         _save_module_hardware = Pickler()
         _save_module_hardware.filename = self.burrow_preference_config.data_path + "\\hardware_config"
+        _save_module_hardware.pickledPickles = _hardware_config
         _ = _save_module_hardware.timeToSave()
-        _save_module_hardware = None  # Is this necessary lmao
 
         # Cameras
         self.master_camera = BehavCamMaster()
@@ -250,8 +250,17 @@ class DAQtoBurrow(Task):
             self.update_behavior()
 
             if self.current_state == "Saving":
+                # myapp.updateStateSignals.emit()
                 self.save_data()
                 self.burrow_preference_machine.saving_complete = True
+                while self.burrow_preference_machine.state != "End":
+                    continue
+                self.behavior_complete = True
+                self.current_state = self.burrow_preference_machine.state
+                self.update_behavior()
+                # myapp.updateStateSignals.emit()
+                # myapp.update_progress_bar.emit()
+                self.stopDAQ()
 
             if self.current_state == "End":
                 self.behavior_complete = True
@@ -290,8 +299,8 @@ class DAQtoBurrow(Task):
 
             self.master_camera.cam_1.currentTrial = self.current_state
             self.master_camera.cam_2.currentTrial = self.current_state
-            self.master_camera.cam_1.bufferNum.append(self.totNumBuffers - 1)
-            self.master_camera.cam_2.bufferNum.append(self.totNumBuffers - 1)
+            self.master_camera.cam_1.currentBuffer = self.totNumBuffers - 1
+            self.master_camera.cam_2.currentBuffer = self.totNumBuffers - 1
 
         # Throw Signals to GUI
         # myapp.catchSignals.emit()
@@ -304,6 +313,20 @@ class DAQtoBurrow(Task):
     def DoneCallback(status):
         print("Status ", status.value)  # Not sure why we print but that's fine
         return 0
+
+    def stopDAQ(self):
+        self.lickedWater.StopTask()
+        self.lickedSucrose.StopTask()
+        self.attemptWater.StopTask()
+        self.attemptSucrose.StopTask()
+        self.waterDriver.StopTask()
+        self.sucroseDriver.StopTask()
+        self.lickSwapper.StopTask()
+        self.gateTrigger.StopTask()
+        self.gateOutDriver.StopTask()
+        self.motorOut.StopTask()
+        self.trialFlagger.StopTask()
+        self.StopTask()
 
     def clearDAQ(self):
         self.lickedWater.StopTask()
@@ -326,6 +349,8 @@ class DAQtoBurrow(Task):
         self.gateOutDriver.ClearTask()
         self.motorOut.StopTask()
         self.motorOut.ClearTask()
+        self.trialFlagger.StopTask()
+        self.trialFlagger.ClearTask()
         self.StopTask()
         self.ClearTask()
 
@@ -355,9 +380,13 @@ class DAQtoBurrow(Task):
             print("Saving Camera 1...")
             self.master_camera.cam_1.isRunning1 = False
             self.master_camera.cam_1.shutdown_mode = True
+            while self.master_camera.cam_1.unsaved:
+                continue
             print("Saving Camera 2...")
             self.master_camera.cam_2.isRunning2 = False
             self.master_camera.cam_2.shutdown_mode = True
+            while self.master_camera.cam_2.unsaved:
+                continue
             self.task_percentage = 100
         # myapp.update_progress_bar.emit()
 
@@ -387,14 +416,23 @@ class DAQtoBurrow(Task):
         self.attemptWater.StartTask()
         self.lickedSucrose.StartTask()
         self.lickedWater.StartTask()
+        self.trialFlagger.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None)  # Write LOW
 
     def startBehavior(self):
         self.burrow_preference_machine.start()
 
+    def process_gate_sensor(self):
+        # dummy var to find the max & flip 0 to 1 // 1 to 0 (Hardware Open Collector Configuration)
+        _gateData = np.array(self.DAQ.grabbedGateTriggerBuffer)
+        if int(abs(_gateData.max() - 1)) == 1:
+            self.trialFlagger.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(5), None)
+        else:
+            self.trialFlagger.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None)
+
     def startCamera(self):
         self.master_camera.start()
-        self.master_camera.cam_1.file_prefix = self.burrow_preference_config.data_path + self.burrow_preference_config.animal_id + "\\" + self.burrow_preference_config.animal_id + "_cam1_"
-        self.master_camera.cam_2.file_prefix = self.burrow_preference_config.data_path + self.burrow_preference_config.animal_id + "\\" + self.burrow_preference_config.animal_id + "_cam2_"
+        self.master_camera.cam_1.file_prefix = "".join([self.burrow_preference_config.data_path, "\\", "_cam1_"])
+        self.master_camera.cam_2.file_prefix = "".join([self.burrow_preference_config.data_path, "\\", "_cam2_"])
         self.cameras_on = True
         return
 
@@ -406,4 +444,3 @@ class DAQtoBurrow(Task):
     @staticmethod
     def calculate_percentage_complete(start, current, end):
         return ((current - start) / (end - start)) * 100
-    

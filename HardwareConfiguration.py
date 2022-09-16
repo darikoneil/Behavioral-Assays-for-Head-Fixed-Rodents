@@ -70,7 +70,7 @@ class HardConfig:
         # Burrow Configuration
 
         # Motor Settings # Note the external motor power source is 12V
-        self.motorPhysicalRange = np.array([0, 50], dtype=np.float64)
+        self.motorPhysicalRange = np.array([0, 100], dtype=np.float64)
         self.motorVoltageRange = np.array([0.001, 4.999], dtype=np.float64)
 
         # UCS Settings

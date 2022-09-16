@@ -35,7 +35,7 @@ class DAQtoBurrow(Task):
         self.current_state = "Dummy"
         self.cameras_on = False
         self.task_percentage = 0
-        self.progress_period = 10
+        self.progress_period = 1
 
         # Indicators for States
         self.habituation_complete = False
@@ -245,8 +245,17 @@ class DAQtoBurrow(Task):
             self.update_behavior()
 
             if self.current_state == "Saving":
+                myapp.updateStateSignals.emit()
                 self.save_data()
                 self.burrow_preference_machine.saving_complete = True
+                while self.burrow_preference_machine.state != "End":
+                    continue
+                self.behavior_complete = True
+                self.current_state = self.burrow_preference_machine.state
+                self.update_behavior()
+                myapp.updateStateSignals.emit()
+                myapp.update_progress_bar.emit()
+                self.stopDAQ()
 
             if self.current_state == "End":
                 self.behavior_complete = True
@@ -299,6 +308,20 @@ class DAQtoBurrow(Task):
         print("Status ", status.value) # Not sure why we print but that's fine
         return 0
 
+    def stopDAQ(self):
+        self.lickedWater.StopTask()
+        self.lickedSucrose.StopTask()
+        self.attemptWater.StopTask()
+        self.attemptSucrose.StopTask()
+        self.waterDriver.StopTask()
+        self.sucroseDriver.StopTask()
+        self.lickSwapper.StopTask()
+        self.gateTrigger.StopTask()
+        self.gateOutDriver.StopTask()
+        self.motorOut.StopTask()
+        self.trialFlagger.StopTask()
+        self.StopTask()
+
     def clearDAQ(self):
         self.lickedWater.StopTask()
         self.lickedWater.ClearTask()
@@ -320,6 +343,8 @@ class DAQtoBurrow(Task):
         self.gateOutDriver.ClearTask()
         self.motorOut.StopTask()
         self.motorOut.ClearTask()
+        self.trialFlagger.StopTask()
+        self.trialFlagger.ClearTask()
         self.StopTask()
         self.ClearTask()
 
@@ -357,7 +382,6 @@ class DAQtoBurrow(Task):
             while self.master_camera.cam_2.unsaved:
                 continue
             self.task_percentage = 100
-            self.DAQ.clearDAQ()
         myapp.update_progress_bar.emit()
 
     def update_behavior(self):
@@ -449,11 +473,13 @@ class MasterGUI(QtWidgets.QMainWindow):
 
         # Set Parameters
         self.ui.mouse_id_var.setText(self.DAQ.burrow_preference_config.animal_id)
-        self.ui.habituation_duration_var.setText("".join([str(self.DAQ.burrow_preference_config.habituation_duration), " Seconds"]))
-        self.ui.preference_duration_var.setText("".join([str(self.DAQ.burrow_preference_config.behavior_duration), " Seconds"]))
+        self.ui.habituation_duration_var.setText("".join([str(
+            self.DAQ.burrow_preference_config.habituation_duration_minutes), " Minutes"]))
+        self.ui.preference_duration_var.setText("".join([str(
+            self.DAQ.burrow_preference_config.behavior_duration_minutes), " Minutes"]))
 
         # Plotting Buffer Construction & Parameters
-        self.plotPeriod = int(5)
+        self.plotPeriod = int(1)
         self.plottingRange = int(5000)  # Length of plotting x-axis (units: ms, integer)
         self.plottingSamples = int(round((self.plottingRange / 1000) * self.DAQ.samplingRate))
         # Number of Samples in plots (units: samples, round integer)
@@ -506,7 +532,6 @@ class MasterGUI(QtWidgets.QMainWindow):
         except DAQException or DAQError or DAQWarning or AttributeError or RuntimeError or ReferenceError:
             self.ui.daq_indicator.setPalette(self.RED)
             print("ERROR INITIATING DATA ACQUISITION!!!")
-
 
     def catchingSignals(self):
         _start_catch = time()
