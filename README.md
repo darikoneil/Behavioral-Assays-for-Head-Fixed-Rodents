@@ -96,7 +96,7 @@ python RespectiveBehavioralScript.pyw
 
 ## Dictionary of Behavioral Scripts     
 
-| **Behavioral Task** | **Associated Script** |
+| **_Behavioral Task_** | **_Associated Script_** |
 | --------------- | ----------------- |
 | Burrow Preference | RunBurrowPreference.pyw |
 | Sucrose Preference | RunSucrosePreference.pyw |
