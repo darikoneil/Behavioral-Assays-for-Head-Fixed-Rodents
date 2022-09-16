@@ -1,5 +1,7 @@
 from os import mkdir, getcwd
 from TypeCheck import test_burrow_preference_config
+import numpy as np
+import random
 
 
 class BurrowPreferenceConfig:
@@ -265,10 +267,33 @@ class SucrosePreferenceConfig:
             return False
 
     @staticmethod
-    def generate_swap_order(num_trials):
-        swap_index = np.append(np.full(int(np.ceil(num_trials)), 1, dtype=int), np.full(int(np.floor(num_trials))))
+    def generate_swap_order_shuffled(num_trials):
+        """
+        Generate order for lick spout swapping - shuffled
+
+        :rtype: tuple
+        """
+        swap_index = np.append(np.full(int(np.ceil(num_trials/2)), 1, dtype=int), np.full(int(np.floor(num_trials/2))))
         np.random.shuffle(swap_index)
-        return swap_index
+        return tuple(swap_index.reshape(1, -1)[0])
+
+    @staticmethod
+    def generate_swap_order_psuedo_shuffle(num_trials):
+        """
+        Generate order for lick spout swapping - psuedo-shuffled
+
+        :rtype: tuple
+        """
+        _num_stages = int(np.floor(num_trials/2))
+        _states = [0, 1]
+        for i in range(_num_stages):
+            random.shuffle(_states)
+            swap_index.extend(_states)
+        if len(swap_index) != num_trials:
+            swap_index.extend(1)
+        return tuple(swap_index)
+
+
 
 if __name__ == '__main__':
     BPC = BurrowPreferenceConfig()
