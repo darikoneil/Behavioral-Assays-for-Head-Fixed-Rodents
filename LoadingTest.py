@@ -6,7 +6,7 @@ import pickle as pkl
 
 def test_data_loading():
     _base_path = getcwd()
-    _animal_id = "BTest"
+    _animal_id = "EM0086"
 
     with open("".join([_base_path, "\\", _animal_id, "\\", "behavior_config"]), "rb") as f:
         _config = pkl.load(f)

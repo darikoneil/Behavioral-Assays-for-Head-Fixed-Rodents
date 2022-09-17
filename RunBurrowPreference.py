@@ -239,6 +239,7 @@ class DAQtoBurrow(Task):
                                           None)
 
         self.grabbedGateTriggerBuffer = self.gateTrigger.readData.copy()
+        self.process_gate_sensor()
 
         # Count Total Buffers
         self.totNumBuffers += 1

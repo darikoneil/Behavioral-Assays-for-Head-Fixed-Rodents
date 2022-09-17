@@ -234,6 +234,7 @@ class DAQtoBurrow(Task):
                                           None)
 
         self.grabbedGateTriggerBuffer = self.gateTrigger.readData.copy()
+        self.process_gate_sensor()
 
         # Count Total Buffers
         self.totNumBuffers += 1
@@ -417,7 +418,7 @@ class DAQtoBurrow(Task):
 
     def process_gate_sensor(self):
         # dummy var to find the max & flip 0 to 1 // 1 to 0 (Hardware Open Collector Configuration)
-        _gateData = np.array(self.DAQ.grabbedGateTriggerBuffer)
+        _gateData = np.array(self.grabbedGateTriggerBuffer)
         if int(abs(_gateData.max() - 1)) == 1:
             self.trialFlagger.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(5), None)
         else:
