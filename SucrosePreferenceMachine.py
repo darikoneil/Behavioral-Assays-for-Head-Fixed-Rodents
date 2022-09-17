@@ -114,15 +114,15 @@ class SucrosePreferenceTask(Thread):
                     self.graduateRelease()
             elif self.state is 'PreferenceTest':
                 self.stage_time = time()
-                    # print("Transitioning from Preference to Saving\n")
+                # print("Transitioning from Preference to Saving\n")
             elif self.state is 'Swapping':
                 if self.checkStageTime(self.stage_time, self.swap_end):
-                    if self.running_trial_index = self.num_preference_trials
-                            self.swapping2Saving()
+                    if self.running_trial_index == self.num_preference_trials:
+                        self.swapping2Saving()
                     elif self.swap_index[self.running_trial_index] == 1:
-                            self.swapping2Rotating()
+                        self.swapping2Rotating()
                     elif self.swap_index[self.running_trial_index] == 0:
-                            self.swapping2Deceiving()
+                        self.swapping2Deceiving()
             elif self.state is 'Rotating':
                 if self.checkStageTime(self.stage_time, self.rotate_end):
                     self.rotating2Preference()

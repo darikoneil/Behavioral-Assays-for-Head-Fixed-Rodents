@@ -350,6 +350,12 @@ class DAQtoBurrow(Task):
         self.ClearTask()
 
     def save_data(self):
+        self.stopDAQ()
+        self.burrow_preference_machine.state = "End"
+        self.burrow_preference_machine.start_run = False
+        self.task_percentage = 0
+        myapp.update_progress_bar.emit()
+
         print("Saving Analog Data...")
         self.save_module_analog.bufferedData = self.bufferedAnalogDataToSave.copy()
         _ = self.save_module_analog.timeToSave()
@@ -372,14 +378,16 @@ class DAQtoBurrow(Task):
         _ = self.daq_catch_times_saver.timeToSave()
 
         if self.cameras_on:
-            print("Saving Camera 1...")
             self.master_camera.cam_1.isRunning1 = False
             self.master_camera.cam_1.shutdown_mode = True
+            self.master_camera.cam_2.isRunning2 = False
+            self.master_camera.cam_2.shutdown_mode = True
+            print("Saving Camera 1...")
+            self.master_camera.cam_1.save_data()
             while self.master_camera.cam_1.unsaved:
                 continue
             print("Saving Camera 2...")
-            self.master_camera.cam_2.isRunning2 = False
-            self.master_camera.cam_2.shutdown_mode = True
+            self.master_camera.cam_2.save_data()
             while self.master_camera.cam_2.unsaved:
                 continue
             self.task_percentage = 100

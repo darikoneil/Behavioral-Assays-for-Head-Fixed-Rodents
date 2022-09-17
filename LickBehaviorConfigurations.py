@@ -13,7 +13,7 @@ class BurrowPreferenceConfig:
         self.validated = False
 
         # General Parameters (Protected with no single setters)
-        self._animal_id = "BTest"
+        self._animal_id = "ATest"
         self._base_path = getcwd() # or manually enter a filepath
         self._data_path = "".join([self.base_path, "\\", self.animal_id])
 

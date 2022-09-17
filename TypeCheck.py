@@ -38,7 +38,8 @@ def cleanup_burrow_preference_config(BasePath):
     if path.exists(_dir):
         rmtree(_dir)
 
-def test_burrow_preference_config(*args):
+
+def test_sucrose_preference_config(*args):
     """
     This function tests validity & integrity of the sucrose preference configuration
 
