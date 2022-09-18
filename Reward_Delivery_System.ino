@@ -1,7 +1,7 @@
 String Program = "Reward Delivery System";
 
 // Behavioral Parameters
-int reward_duration = 30;
+long reward_duration = 6533;
 long reward_sucrose_start = 0;
 long reward_water_start = 0;
 
@@ -14,6 +14,8 @@ int trigger_sucrose_pin = 9;
 int trigger_water_pin = 8;
 int sucrose_cap_touch_pin = 7;
 int water_cap_touch_pin = 6;
+int sucrose_calibration_pin = 5;
+int water_calibration_pin = 4;
 
 // Debouncing
 int num_sucrose_reading = 0;
@@ -30,6 +32,9 @@ int signals_per_reward = 4;
 int reading_period = 5;
 int rolling_sucrose_licks = 0;
 int rolling_water_licks = 0;
+long calibration_duration = reward_duration * 333;
+int rewarding_calibration = 0;
+long calib_start = 0;
 
 void setup() {
     pinMode(delivered_sucrose_pin, OUTPUT);
@@ -40,24 +45,30 @@ void setup() {
     pinMode(trigger_water_pin, OUTPUT);
     pinMode(sucrose_cap_touch_pin, INPUT);
     pinMode(water_cap_touch_pin, INPUT);
+    pinMode(water_calibration_pin, INPUT);
+    pinMode(sucrose_calibration_pin, INPUT);
+    
 
-    // Serial.begin(38400);
-    //Serial.println(Program);
+    Serial.begin(38400);
+    Serial.println(Program);
 }
 
 void loop() {
 
     if(rewarding_sucrose == 1){
-        checkTerminateSucrose;
+        checkTerminateSucrose();
     }
-    else if(reward_water_start == 1){
-        checkTerminateWater;
+    else if(rewarding_water == 1){
+        checkTerminateWater();
+    }
+    else if (rewarding_calibration == 1){
+        checkTerminateCalibration();
     }
     else {
         checkSucrose();
         checkWater();
+        checkCalibration();
     }
-
 }
 
 void checkSucrose() {
@@ -67,6 +78,7 @@ void checkSucrose() {
          // Alert licking
          if (sucrose_licking){
          digitalWrite(licked_sucrose_pin, HIGH);
+         Serial.println("LICKED SUCROSE");
          }
          else {
          digitalWrite(licked_sucrose_pin, LOW);
@@ -76,9 +88,9 @@ void checkSucrose() {
             if (rolling_sucrose_licks > signals_per_reward){
             deliverSucrose();
             }
+            num_sucrose_reading = 0;
+            rolling_sucrose_licks = 0;
         }
-        num_sucrose_reading = 0;
-        rolling_sucrose_licks = 0;
 }
 
 void checkWater() {
@@ -88,6 +100,7 @@ void checkWater() {
          // Alert licking
          if (water_licking){
          digitalWrite(licked_water_pin, HIGH);
+         Serial.println("LICKED WATER");
          }
          else {
          digitalWrite(licked_water_pin, LOW);
@@ -97,35 +110,73 @@ void checkWater() {
             if (rolling_water_licks > signals_per_reward){
             deliverWater();
             }
+            num_water_reading = 0;
+            rolling_water_licks = 0;
         }
-        num_water_reading = 0;
-        rolling_water_licks = 0;
+
 }
 
 void deliverSucrose(){
-    reward_sucrose_start = millis();
+    Serial.println("REWARDING SUCROSE - NC");
+    reward_sucrose_start = micros();
     digitalWrite(trigger_sucrose_pin, HIGH);
     digitalWrite(delivered_sucrose_pin, HIGH);
     rewarding_sucrose = 1;
 }
 
 void deliverWater(){
-       reward_water_start = millis();
+      Serial.println("REWARDING WATER -NC");
+       reward_water_start = micros();
        digitalWrite(trigger_water_pin, HIGH);
        digitalWrite(delivered_water_pin, HIGH);
        rewarding_water = 1;
 }
 
 void checkTerminateSucrose(){
-    if((millis()-reward_sucrose_start) > reward_duration){
+    if((micros()-reward_sucrose_start) > reward_duration){
         digitalWrite(trigger_sucrose_pin, LOW);
         digitalWrite(delivered_sucrose_pin, LOW);
+        rewarding_sucrose = 0;
     }
 }
 
 void checkTerminateWater(){
-    if((millis()-reward_water_start) > reward_duration){
+    if((micros()-reward_water_start) > reward_duration){
         digitalWrite(trigger_water_pin, LOW);
         digitalWrite(delivered_water_pin, LOW);
+        rewarding_water = 0;
     }
+}
+
+void checkCalibration() {
+       if (digitalRead(water_calibration_pin)==HIGH) {
+        
+          if (rewarding_calibration==0) {
+           //Serial.println("REWARDING WATER");
+              rewarding_calibration = 1;
+              calib_start = micros();
+              digitalWrite(trigger_water_pin, HIGH);
+              digitalWrite(delivered_water_pin, HIGH);
+          }
+       }
+      if (digitalRead(sucrose_calibration_pin)==HIGH) {
+
+        if (rewarding_calibration==0) {
+          //Serial.println("REWARDING SUCROSE");
+              rewarding_calibration = 1;
+              calib_start = micros();
+             digitalWrite(trigger_sucrose_pin, HIGH);
+             digitalWrite(delivered_sucrose_pin, HIGH);
+        }
+      }
+}
+
+void checkTerminateCalibration() {
+  if ((micros()-calib_start) > calibration_duration) {
+    digitalWrite(trigger_water_pin, LOW);
+    digitalWrite(trigger_sucrose_pin, LOW);
+    digitalWrite(delivered_water_pin, LOW);
+    digitalWrite(delivered_sucrose_pin, LOW);
+    rewarding_calibration = 2;
+  }
 }

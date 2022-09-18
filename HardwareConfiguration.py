@@ -11,7 +11,8 @@ class HardConfig:
             'Device1': 'NI USB-6001',
             'Device2': 'Arduino Due',
             'Device3': 'NI USB-6008',
-            'Device4': 'Arduino Uno'
+            'Device4': 'NI USB-6001',
+            'Device5': 'Arduino Uno'
         }
 
         # Device 2
@@ -25,12 +26,13 @@ class HardConfig:
             "Device 2 Digital Pin 6": "Water Capacitive Touch Breakout, OUT",
         }
 
-        # Device 4
-        self.device_4_dictionary = {
-            "Device 4 Ground": "Dev3/ao1_gnd to device 4 ground",
-            "Device 4 5V Pin": "G14, Lick Swapper Power Supply",
-            "Device 4 Ground 2": "H13, Lick Swapper Power Ground",
-            "Device 4 Digital Pin 3": "F15, Lick Swapper Signal",
+        # Dev5
+        self.device_5_dictionary = {
+            "Dev5 Ground": "Dev4/ao1_gnd to Dev5 ground",
+            "Dev5 5V Pin": "G14, Lick Swapper Power Supply",
+            "Dev5 Ground 2": "H13, Lick Swapper Power Ground",
+            "Dev5 Digital Pin 3": "F15, Lick Swapper Signal",
+            "Dev5 Digital Pin 5": "Remover Swapper Signal",
         }
 
         # External Board
@@ -66,6 +68,7 @@ class HardConfig:
         self.bufferSize = int(round(self.samplingRate/self.buffersPerSecond))
         # Analog Voltage Range LIMITS (*NOTE*) (units: V, floating 64 (double))
         self.analogVoltageRange = np.array([-10, 10], dtype=np.float64)
+
 
         # Burrow Configuration
 
@@ -107,13 +110,15 @@ class HardConfig:
 
         # Digital Outputs - Reward
         self.numDigitalOut_Reward = int(3)
-        self.lickSwapChannel = "Dev3/port1/line1" # Motor command out to Device 4 Digital Pin "7"
-        self.sucroseChannel = "Dev3/port1/line2" # Sucrose H-bridge enable out to L293D 1,2EN, "A1"
-        self.waterChannel = "Dev3/port1/line3" # Water H-bridge enable out to L293D 3,4EN, "G8"
+        self.lickSwapChannel = "Dev4/port1/line1" # Motor command out to Dev5 Digital Pin "7"
+        self.sucroseChannel = "Dev4/port1/line2" # Sucrose H-bridge enable out to L293D 1,2EN, "A1"
+        self.waterChannel = "Dev4/port1/line3" # Water H-bridge enable out to L293D 3,4EN, "G8"
 
         # Digital Inputs - Lick-Swapper
         self.numDigitalIn_Reward = int(4)
-        self.deliveredSucroseChannel = "Dev3/port0/line0" # Input from Device 2 Digital Pin "13"
-        self.deliveredWaterChannel = "Dev3/port0/line1" # Input from Device 2 Digital Pin "12"
-        self.lickedSucroseChannel = "Dev3/port0/line2" # Input from Device 2 Digital Pin "11"
-        self.lickedWaterChannel = "Dev3/port0/line3" # Input from Device 2 Digital Pin "10"
+        self.deliveredSucroseChannel = "Dev4/port0/line0" # Input from Device 2 Digital Pin "13"
+        self.deliveredWaterChannel = "Dev4/port0/line1" # Input from Device 2 Digital Pin "12"
+        self.lickedSucroseChannel = "Dev4/port0/line2" # Input from Device 2 Digital Pin "11"
+        self.lickedWaterChannel = "Dev4/port0/line3" # Input from Device 2 Digital Pin "10"
+        self.sucrose_calibration_pin = "Dev4/port0/line6" # Output to Device 2 Digital Pin "5"
+        self.water_calibration_pin = "Dev4/port0/line7" # Output to Device 2 Digital Pin "4"
