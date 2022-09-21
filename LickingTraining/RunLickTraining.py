@@ -1,4 +1,5 @@
 import numpy as np
+from ctypes import byref
 from PyDAQmx import *
 from GenericModules.DAQModules import DigitalGroupReader
 from LickBehaviorConfigurations import SucrosePreferenceConfig
@@ -22,16 +23,20 @@ class DAQtoLickTraining(Task):
         else:
             self.sucrose_preference_config = SucrosePreferenceConfig()
 
+        # User Parameters
+        self.cameras_on = False
+        self.print_period = 10
+
         # Training Parameters
         self.animal_id = self.sucrose_preference_config.animal_id
         self.single_lick_volume = self.sucrose_preference_config.single_lick_volume
         self.total_rewards_allowed = self.sucrose_preference_config.total_rewards_allowed
-        self.trial_intake = self.sucrose_preference_config.licks_per_trial
+        self.trial_rewards_limit = self.sucrose_preference_config.licks_per_trial
 
         # Training Flags
         self.current_state = "Setup"
         self.current_trial = 0
-        self.current_trial_intake = 0
+        self.current_trial_rewards = 0
         self.current_spout = "Water" # or Sucrose
         self.training_started = False
         self.unsaved = True
@@ -63,32 +68,36 @@ class DAQtoLickTraining(Task):
         self.CreateAIVoltageChan(_hardware_config.analog_chans_in, "Analog In", DAQmx_Val_RSE, self.voltage_range_in[0],
                                  self.voltage_range_in[1], DAQmx_Val_Volts, None)
         # RSE is reference single-ended, Val_Volts flags voltage units
-        self.CfgSampClkTiming("", self.samplingRate, DAQmx_Val_Rising, DAQmx_Val_ContSamps, self.buffer_size)
+        self.CfgSampClkTiming("", self.sampling_rate, DAQmx_Val_Rising, DAQmx_Val_ContSamps, self.buffer_size)
         # Val rising means on the rising edge, cont samps is continuous sampling
         self.AutoRegisterEveryNSamplesEvent(DAQmx_Val_Acquired_Into_Buffer, self.buffer_size, 0, name='EveryNCallback')
-        # Callback every buffer_size over time = buffer_size*samplingRate
+        # Callback every buffer_size over time = buffer_size*sampling_rate
         self.AutoRegisterDoneEvent(0, name='DoneCallback')  # Flag Callback Executed
 
         # Setup DAQ - Digital Output
         self.permissions = Task()
         self.permissions.number_of_channels = _hardware_config.num_digital_out_port_1
         self.permissions.fill_mode = np.bool_(1)
-        self.permissions.units = np.float64(1)
+        self.permissions.units = np.int32(1)
         self.permissions.timeout = self.timeout
         self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
         self.permissions.CreateDOChan(_hardware_config.digital_chans_out_port_1, "Permissions", DAQmx_Val_ChanForAllLines)
-        self.permissions_sucrose_channel_id = int(1)
-        self.permissions_water_channel_id = int(2)
+        self.permissions_sucrose_channel_id = _hardware_config.permission_sucrose_channel_id
+        self.permissions_water_channel_id = _hardware_config.permission_water_channel_id
 
         # Setup DAQ - Digital Input
         self.rewards_monitor = Task()
         self.rewards_monitor = DigitalGroupReader(_hardware_config.num_digital_in, _hardware_config.digital_chans_in,
                                                   _hardware_config.timeout, _hardware_config.buffer_size,
                                                   "Reward Monitor")
+        self.water_reward_channel_id = _hardware_config.water_reward_channel_id
+        self.sucrose_reward_channel_id = _hardware_config.sucrose_reward_channel_id
+        self.licking_water_channel_id = _hardware_config.licking_water_channel_id
+        self.licking_sucrose_channel_id = _hardware_config.licking_sucrose_channel_id
 
         # Prep Data Buffers
         self.bufferedAnalogDataToSave = np.array(self.DAQAnalogInBuffer.copy(), dtype=np.float64)
-        self.bufferedDigitalDataToSave = np.full((4, self.bufferSize), 0, dtype=np.uint8)
+        self.bufferedDigitalDataToSave = np.full((_hardware_config.num_digital_in, self.buffer_size), 0, dtype=np.uint8)
         self.bufferedStateToSave = np.array(['0'], dtype=str)
 
         # Grabbed Digital Buffer
@@ -107,15 +116,16 @@ class DAQtoLickTraining(Task):
         self.save_module_config = Pickler()
         self.save_module_config.filename = self.sucrose_preference_config.data_path + "\\config"
 
-        self.master_camera = BehavCam(0, 640, 480, "CAM")
-        self.master_camera.file_prefix = "".join([self.sucrose_preference_config.data_path, "\\", "_cam2_"])
-        self.master_camera.isRunning2 = True
-        self.master_camera.start()
+        if self.cameras_on:
+            self.master_camera = BehavCam(0, 640, 480, "CAM")
+            self.master_camera.file_prefix = "".join([self.sucrose_preference_config.data_path, "\\", "_cam2_"])
+            self.master_camera.isRunning2 = True
+            self.master_camera.start()
 
     def EveryNCallback(self):
 
         # Read Device 1 Analog Inputs
-        self.ReadAnalogF64(self.bufferSize, self.timeout, DAQmx_Val_GroupByChannel, self.DAQAnalogInBuffer,
+        self.ReadAnalogF64(self.buffer_size, self.timeout, DAQmx_Val_GroupByChannel, self.DAQAnalogInBuffer,
                                self.numSamplesPerBlock, byref(self.units), None)
 
         # Grab the data
@@ -132,25 +142,26 @@ class DAQtoLickTraining(Task):
         self.bufferedAnalogDataToSave = np.append(self.bufferedAnalogDataToSave, self.grabbedAnalogBuffer, axis=1)
         self.bufferedStateToSave = np.append(self.bufferedStateToSave, self.current_state)
         self.bufferedDigitalDataToSave = np.append(self.bufferedDigitalDataToSave, self.grabbedDigitalBuffer, axis=1)
-        self.master_camera.currentTrial = self.current_trial
-        self.master_camera.currentBuffer = self.totNumBuffers - 1
+        if self.cameras_on:
+            self.master_camera.currentTrial = self.current_trial
+            self.master_camera.currentBuffer = self.totNumBuffers - 1
 
         # Process rewards if training started
         if self.training_started:
             # Process rewards...
             if self.current_spout == "Water":
-                if self.process_rewards(self.grabbedDigitalBuffer[self.rewardWaterChannel, :]):
-                    self.current_trial_intake += 1
-                    self.running_water_rewards += self.current_trial_intake
+                if self.process_rewards(self.grabbedDigitalBuffer[self.water_reward_channel_id, :]):
+                    self.current_trial_rewards += 1
+                    self.running_water_rewards += 1
             elif self.current_spout == "Sucrose":
-                if self.process_rewards(self.grabbedDigitalBuffer[self.rewardSucroseChannel, :]):
-                    self.current_trial_intake += 1
-                    self.running_sucrose_rewards += self.current_trial_intake
+                if self.process_rewards(self.grabbedDigitalBuffer[self.sucrose_reward_channel_id, :]):
+                    self.current_trial_rewards += 1
+                    self.running_sucrose_rewards += 1
         self.running_rewards = self.running_sucrose_rewards + self.running_water_rewards
         # Process licks...
-        if self.process_licks(self.grabbedDigitalBuffer[self.rewardWaterChannel, :]):
+        if self.process_licks(self.grabbedDigitalBuffer[self.licking_water_channel_id, :]):
             self.running_licks_water += 1
-        if self.process_licks(self.grabbedDigitalBuffer[self.rewardSucroseChannel, :]):
+        if self.process_licks(self.grabbedDigitalBuffer[self.licking_sucrose_channel_id, :]):
             self.running_licks_sucrose += 1
         self.running_licks = self.running_licks_water + self.running_licks_sucrose
 
@@ -160,10 +171,10 @@ class DAQtoLickTraining(Task):
         # Report information to the console
         if self.totNumBuffers % self.print_period == 0:
             print("\n ----------------------------------")
-            print("".join(["\nRunning Intake: ", str(self.running_intake), " rewards delivered", " and ", str(self.running_intake * self.single_lick_volume), " uL consumed"]))
+            print("".join(["\nRunning Intake: ", str(self.running_rewards), " rewards delivered", " and ", str(self.running_rewards * self.single_lick_volume), " uL consumed"]))
             print("".join(["\nRunning Licks: ", str(self.running_licks)]))
             print("".join(["\nCurrent Trial: ", str(self.current_trial)]))
-            print("".join(["\nRunning Trial Intake: ", str(self.current_trial_intake)]))
+            print("".join(["\nRunning Trial Intake: ", str(self.current_trial_rewards)]))
             print("\n ----------------------------------")
 
         return 0
@@ -212,22 +223,22 @@ class DAQtoLickTraining(Task):
         self.hold = True
         self.current_trial += 1
         self.current_state = str(self.current_trial)
-        self.current_trial_intake = 0
+        self.current_trial_rewards = 0
         self.swap_permission()
         self.hold = False
 
     def swap_permission(self):
         if self.current_spout == "Water":
             self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
-            self.permissions.data[self.permissions_water_channel_id, self.permissions_sucrose_channel_id] = 0, 1
-            self.permissions.WriteDigitalLines(self.permissions.fillMode, self.permissions.units,
+            self.permissions.data[[self.permissions_water_channel_id, self.permissions_sucrose_channel_id]] = 0, 1
+            self.permissions.WriteDigitalLines(self.permissions.fill_mode, self.permissions.units,
                                                self.permissions.timeout, DAQmx_Val_GroupByChannel,
                                                self.permissions.data, None, None)
             self.current_spout = "Sucrose"
         elif self.current_spout == "Sucrose":
             self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
-            self.permissions.data[self.permissions_water_channel_id, self.permissions_sucrose_channel_id] = 1, 0
-            self.permissions.WriteDigitalLines(self.permissions.fillMode, self.permissions.units,
+            self.permissions.data[[self.permissions_water_channel_id, self.permissions_sucrose_channel_id]] = 1, 0
+            self.permissions.WriteDigitalLines(self.permissions.fill_mode, self.permissions.units,
                                                self.permissions.timeout, DAQmx_Val_GroupByChannel,
                                                self.permissions.data, None, None)
             self.current_spout = "Water"
@@ -235,25 +246,28 @@ class DAQtoLickTraining(Task):
     def initialize_permission(self):
         if self.current_spout == "Water":
             self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
-            self.permissions.data[self.permissions_water_channel_id, self.permissions_sucrose_channel_id] = 1, 0
-            self.permissions.WriteDigitalLines(self.permissions.fillMode, self.permissions.units,
+            self.permissions.data[[self.permissions_water_channel_id, self.permissions_sucrose_channel_id]] = 1, 0
+            self.permissions.WriteDigitalLines(self.permissions.fill_mode, self.permissions.units,
                                                self.permissions.timeout, DAQmx_Val_GroupByChannel,
                                                self.permissions.data, None, None)
         elif self.current_spout == "Sucrose":
             self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
-            self.permissions.data[self.permissions_water_channel_id, self.permissions_sucrose_channel_id] = 0, 1
-            self.permissions.WriteDigitalLines(self.permissions.fillMode, self.permissions.units,
+            self.permissions.data[[self.permissions_water_channel_id, self.permissions_sucrose_channel_id]] = 0, 1
+            self.permissions.WriteDigitalLines(self.permissions.fill_mode, self.permissions.units,
                                                self.permissions.timeout, DAQmx_Val_GroupByChannel,
                                                self.permissions.data, None, None)
 
     def check_if_finished(self):
-        if self.running_intake >= self.total_rewards_allowed:
+        if self.running_rewards >= self.total_rewards_allowed:
             self.end_training()
-        elif self.current_trial_intake >= self.trial_intake:
+        elif self.current_trial_rewards >= self.trial_rewards_limit:
             self.current_trial += 1
             self.current_state = str(self.current_trial)
-            self.current_trial_intake = 0
+            self.current_trial_rewards = 0
             self.swap_permission()
+
+    def save_data(self):
+        return
 
     @staticmethod
     def process_rewards(Data):

@@ -35,18 +35,18 @@ class HardConfig:
         # Gate Channel
         self.gate_triggered_channel_name = "BurrowDAQ/port0/line0"
         self.gate_triggered_channel_id = int(0)
-        # Reward Water
-        self.water_reward_channel_name = "BurrowDAQ/port0/line1"
-        self.water_reward_channel_id = int(1)
         # Reward Sucrose
-        self.sucrose_reward_channel_name = "BurrowDAQ/port0/line2"
-        self.sucrose_reward_channel_id = int(2)
-        # Licking Water
-        self.licking_water_channel_name = "BurrowDAQ/port0/line3"
-        self.licking_water_channel_id = int(3)
+        self.sucrose_reward_channel_name = "BurrowDAQ/port0/line1"
+        self.sucrose_reward_channel_id = int(1)
+        # Reward Water
+        self.water_reward_channel_name = "BurrowDAQ/port0/line2"
+        self.water_reward_channel_id = int(2)
         # Licking Sucrose
-        self.licking_sucrose_channel_name = "BurrowDAQ/port0/line4"
-        self.licking_sucrose_channel_id = int(4)
+        self.licking_sucrose_channel_name = "BurrowDAQ/port0/line3"
+        self.licking_sucrose_channel_id = int(3)
+        # Licking Water
+        self.licking_water_channel_name = "BurrowDAQ/port0/line4"
+        self.licking_water_channel_id = int(4)
 
         # Analog Outputs Parameters
         self.num_analog_out = int(2)
@@ -96,7 +96,7 @@ class HardConfig:
         """
 
         try:
-            _buffer_size = self.sampling_rate/self.buffers_per_second
+            _buffer_size = self.sampling_rate//self.buffers_per_second
             assert(isinstance(_buffer_size, int))
             return _buffer_size
         except AssertionError:
@@ -111,7 +111,7 @@ class HardConfig:
         :rtype: int
         """
         try:
-            _buffers_per_second = self.sampling_rate/self.buffer_time
+            _buffers_per_second = self.sampling_rate//self.buffer_time
             assert(isinstance(_buffers_per_second, int))
             return _buffers_per_second
         except AssertionError:
