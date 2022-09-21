@@ -112,6 +112,7 @@ class BurrowPreferenceConfig:
         except RuntimeError:
             return False
 
+
 class SucrosePreferenceConfig:
     """
     Configuration File for Sucrose Preference Task
@@ -121,17 +122,17 @@ class SucrosePreferenceConfig:
         self.validated = False
 
         # General Parameters (Protected with no single setters)
-        self._animal_id = "CTest"
+        self._animal_id = "Mouse Name"
         self._base_path = getcwd() # or manually enter a filepath
         self._data_path = "".join([self.base_path, "\\", self.animal_id])
 
         # Behavior Parameters
         self._habituation_duration = 5 # Habituation duration in seconds, integer
-        self._single_lick_volume = 3 # liquid dispensed in response to single lick (uL)
-        self._max_liquid_intake =  1 # upper limit of total liquid consumption (mL)
-        self._licks_per_trial = 30 # Number of licks per trial
-        self._swap_index = self.generate_swap_order(self.num_preference_trial)
-
+        self._single_lick_volume = 3.8 # liquid dispensed in response to single lick (uL)
+        self._max_liquid_intake = 1 # upper limit of total liquid consumption (mL)
+        self._licks_per_trial = 25 # Number of licks per trial
+        self._reward_duration_water = 20.125 # ms
+        self._reward_duration_sucrose = 18.5 # ms
         # Make the data folder - SHOULD NOT EXIST
         try:
             mkdir(self.data_path)
@@ -143,15 +144,15 @@ class SucrosePreferenceConfig:
                 return
 
         # Check Integrity
-        self.validated = self.validation()
+        # self.validated = self.validation()
 
-        try:
-            assert(self.validated is True)
-        except AssertionError:
-            print("Configuration could not be validated")
-            return
-        except AttributeError:
-            return
+        # try:
+        #     assert(self.validated is True)
+        # except AssertionError:
+            # print("Configuration could not be validated")
+            # return
+        # except AttributeError:
+         #    return
 
     @property
     def animal_id(self):
@@ -208,6 +209,10 @@ class SucrosePreferenceConfig:
         return self._single_lick_volume
 
     @property
+    def single_lick_volume_mL(self):
+        return self._single_lick_volume/1000
+
+    @property
     def max_liquid_intake(self):
         """
         Maximal intake of liquid permitted in milliliters
@@ -217,22 +222,22 @@ class SucrosePreferenceConfig:
         return self._max_liquid_intake
 
     @property
-    def total_licks_allowed(self):
+    def total_rewards_allowed(self):
         """
-        Number of licks permitted before eaching maximum liquid intake
+        Number of licks permitted before maximum liquid intake
 
         :rtype: int
         """
         return self._max_liquid_intake*1000/self._single_lick_volume
 
-    @property
-    def num_preference_trial(self):
-        """
-        Number of sucrose preference trials
-        
-        :rtype: int
-        """
-        return self.total_licks_allowed/self._licks_per_trial
+    # @property
+    # def num_preference_trial(self):
+    #     """
+    #    Number of sucrose preference trials
+
+    #   :rtype: int
+    #   """
+    #   return self.total_rewards_allowed/self._licks_per_trial
 
     @property
     def volume_per_trial(self):
@@ -253,45 +258,64 @@ class SucrosePreferenceConfig:
         return self._licks_per_trial
 
     @property
-    def swap_index(self):
+    def reward_duration_water(self):
         """
-        Order for lick spout swapping
-        """
-        return self._swap_index
+        Duration of solenoid being opened for reward (water, ms)
 
-    def validation(self):
-        try:
-            test_sucrose_preference_config(self)
-            return True
-        except RuntimeError:
-            return False
-
-    @staticmethod
-    def generate_swap_order_shuffled(num_trials):
+        :rtype: float
         """
-        Generate order for lick spout swapping - shuffled
+        return self._reward_duration_water
 
-        :rtype: tuple
+    @property
+    def reward_duration_sucrose(self):
         """
-        swap_index = np.append(np.full(int(np.ceil(num_trials/2)), 1, dtype=int), np.full(int(np.floor(num_trials/2))))
-        np.random.shuffle(swap_index)
-        return tuple(swap_index.reshape(1, -1)[0])
+        Duration of solenoid being opened for reward (sucrose, ms)
 
-    @staticmethod
-    def generate_swap_order_psuedo_shuffle(num_trials):
+        :rtype: float
         """
-        Generate order for lick spout swapping - psuedo-shuffled
+        return self._reward_duration_sucrose
 
-        :rtype: tuple
-        """
-        _num_stages = int(np.floor(num_trials/2))
-        _states = [0, 1]
-        for i in range(_num_stages):
-            random.shuffle(_states)
-            swap_index.extend(_states)
-        if len(swap_index) != num_trials:
-            swap_index.extend(1)
-        return tuple(swap_index)
+
+#  @property
+   #  def swap_index(self):
+      #   """
+      #   Order for lick spout swapping
+      #   """
+      #   return self._swap_index
+
+    # def validation(self):
+      #   try:
+         #    test_sucrose_preference_config(self)
+        #    return True
+      #   except RuntimeError:
+      #       return False
+
+   #  @staticmethod
+   #  def generate_swap_order_shuffled(num_trials):
+      #  """
+     #   Generate order for lick spout swapping - shuffled
+
+    #    :rtype: tuple
+     #   """
+     #  # swap_index = np.append(np.full(int(np.ceil(num_trials/2)), 1, dtype=int), np.full(int(np.floor(num_trials/2))))
+     # #  np.random.shuffle(swap_index)
+     # #  return tuple(swap_index.reshape(1, -1)[0])
+
+    # @staticmethod
+    # def generate_swap_order_psuedo_shuffle(num_trials):
+    #    """
+    #    Generate order for lick spout swapping - psuedo-shuffled
+    #
+    #    :rtype: tuple
+     #   """
+     #   _num_stages = int(np.floor(num_trials/2))
+     #   _states = [0, 1]
+     #   for i in range(_num_stages):
+          #  random.shuffle(_states)
+        #    swap_index.extend(_states)
+    #    if len(swap_index) != num_trials:
+     #       swap_index.extend(1)
+    #    return tuple(swap_index)
 
 
 
@@ -313,3 +337,4 @@ if __name__ == '__main__':
     print("".join(["Lick Volume: ", str(SPC.single_lick_volume)]))
     print("".join(["Maximal Intake: ", str(SPC.max_liquid_intake)]))
     print("".join(["Configuration Validated: ", str(SPC.validated)]))
+    print("".join(["Total Rewards Allowed: ", str(SPC.total_rewards_allowed)]))
