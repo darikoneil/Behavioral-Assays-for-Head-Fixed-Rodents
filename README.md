@@ -102,6 +102,7 @@ python RespectiveBehavioralScript.pyw
 | --------------- | ----------------- |
 | Burrow Preference | RunBurrowPreference.pyw |
 | Sucrose Preference | RunSucrosePreference.pyw |
+| Licking Training | RunLickTraining.py |
 | Simple Discrimination | RunSimpleDiscrimination.pyw |
 | Reversal Test | RunReversalTest.pyw |
 
