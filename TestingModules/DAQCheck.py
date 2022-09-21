@@ -1,4 +1,4 @@
-from RunBurrowPreference import DAQtoBurrow
+from BurrowPreferenceTask.RunBurrowPreference import DAQtoBurrow
 from testing_utility_functions import load_pickle_from_file
 from os import getcwd
 

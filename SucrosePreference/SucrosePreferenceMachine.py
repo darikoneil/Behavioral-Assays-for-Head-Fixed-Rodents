@@ -1,4 +1,3 @@
-from LickBehaviorConfigurations import SucrosePreferenceConfig
 from threading import Thread
 from transitions import Machine
 from time import time
@@ -178,7 +177,7 @@ class SucrosePreferenceTask(Thread):
 
 
 if __name__ == "__main__":
-    from testing_utility_functions import load_pickle_from_file
+    from TestingModules.testing_utility_functions import load_pickle_from_file
     from os import getcwd
     BPT = SucrosePreferenceTask(load_pickle_from_file("".join([getcwd(), "\\", "Test_Mouse.pkl"])))
     BPT.start_run = True

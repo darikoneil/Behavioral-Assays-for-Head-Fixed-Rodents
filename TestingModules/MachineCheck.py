@@ -1,4 +1,4 @@
-from BurrowPreferenceMachine import BurrowPreferenceTask
+from BurrowPreferenceTask.BurrowPreferenceMachine import BurrowPreferenceTask
 from testing_utility_functions import load_pickle_from_file
 from os import getcwd
 

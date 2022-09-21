@@ -1,7 +1,5 @@
 from os import mkdir, getcwd
-from TypeCheck import test_burrow_preference_config
-import numpy as np
-import random
+from TestingModules.TypeCheck import test_burrow_preference_config
 
 
 class BurrowPreferenceConfig:

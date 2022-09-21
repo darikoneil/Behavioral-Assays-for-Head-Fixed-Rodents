@@ -1,13 +1,10 @@
-import os
-import sys
-from ctypes import byref
 import numpy as np
 from PyDAQmx import *
-from DAQModules import DigitalGroupReader
+from GenericModules.DAQModules import DigitalGroupReader
 from LickBehaviorConfigurations import SucrosePreferenceConfig
 from HardwareConfiguration import HardConfig
-from SaveModule import Saver, Pickler
-from BehavioralCamera_Slave import BehavCam
+from GenericModules.SaveModule import Saver, Pickler
+from GenericModules.BehavioralCamera_Slave import BehavCam
 
 global DAQmx_Val_RSE, DAQmx_Val_Volts, DAQmx_Val_Rising, DAQmx_Val_ContSamps, DAQmx_Val_Acquired_Into_Buffer
 global DAQmx_Val_GroupByScanNumber, DAQmx_Val_GroupByChannel, DAQmx_Val_ChanForAllLines, DAQmx_Val_OnDemand

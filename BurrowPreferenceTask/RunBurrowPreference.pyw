@@ -4,9 +4,9 @@ from PyQt6 import QtGui, QtCore, QtWidgets
 from BurrowPreference_Real_GUI import Ui_MainWindow
 from BurrowPreferenceMachine import BurrowPreferenceTask
 from LickBehaviorConfigurations import BurrowPreferenceConfig
-from BehavioralCamera_Master import BehavCamMaster
+from GenericModules.BehavioralCamera_Master import BehavCamMaster
 from HardwareConfiguration import HardConfig
-from SaveModule import Saver, Pickler
+from GenericModules.SaveModule import Saver, Pickler
 
 import sys
 from ctypes import byref
