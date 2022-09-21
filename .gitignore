@@ -127,23 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-!/B_x290_y400_z1401_p128t136_avr1_LIII-005_Cycle00001_VoltageRecording_001.csv
-!/Scratch/Scratch_Faster_Writing.py
-!/Scratch/SCRATCH.py
-!/StartleStuff/
-!/BehavioralData/M33780_ALONE/
-
-!/BehavioralData/M33780_ALONE_REAL/
-
-!/BehavioralData/M33780_ALONE_REAL_2/
-
-!/BehavioralData/M337809/
-
-!/BehavioralData/EM0086X/
-!/ATest/
-!/DTest/
-!/BTest/
-!/Scratch/
-!/BehavioralData/Test/
-!/BehavioralData/Test2/
-!/BehavioralData/
+B_x290_y400_z1401_p128t136_avr1_LIII-005_Cycle00001_VoltageRecording_001.csv
+StartleStuff/
+Scratch/
+BehavioralData/Test/
+BehavioralData/Test2/
+BehavioralData/
