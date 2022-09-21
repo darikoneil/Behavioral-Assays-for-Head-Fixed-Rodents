@@ -1,16 +1,11 @@
-import os
-from time import time
-
 from PyDAQmx import *
 
 from LickBehaviorConfigurations import SucrosePreferenceConfig
 from HardwareConfiguration import HardConfig
-from SaveModule import Saver, Pickler
+from GenericModules.SaveModule import Saver, Pickler
 
-import sys
 from ctypes import byref
 import numpy as np
-from time import time
 
 global DAQmx_Val_RSE, DAQmx_Val_Volts, DAQmx_Val_Rising, DAQmx_Val_ContSamps, DAQmx_Val_Acquired_Into_Buffer
 global DAQmx_Val_GroupByScanNumber, DAQmx_Val_GroupByChannel, DAQmx_Val_ChanForAllLines, DAQmx_Val_OnDemand
@@ -188,7 +183,7 @@ class DAQtoLickTraining(Task):
         self.running_intake = 0
         self.intake_goal = self.sucrose_preference_config.max_liquid_intake
         self.animal_id = self.sucrose_preference_config.animal_id
-        self.single_intake = self.sucrose_preference_config.single_lick_volume_mL
+        self.single_intake = self.sucrose_preference_config.single_lick_volume
         self.number_licks_allowed = self.sucrose_preference_config.total_licks_allowed
         self.reward_duration = 30 # ms
         self.current_state = "Setup"
@@ -217,21 +212,25 @@ class DAQtoLickTraining(Task):
         self.grabbedAnalogBuffer = self.DAQAnalogInBuffer.copy()  # Grab the buffer now and make NI drivers happy if we have any lags
 
         # Grab Digital Stuff
-        self.grabbedDigitalBuffer[0, :] = self.lickedWater.ReadDigitalLines(self.lickedWater.numSampsPerChan, self.timeout, self.lickedWater.fillMode,
+        self.lickedWater.ReadDigitalLines(self.lickedWater.numSampsPerChan, self.timeout, self.lickedWater.fillMode,
                                                                             self.lickedWater.readData, self.lickedWater.arraySizeInBytes,
                                                                             self.lickedWater.sampsPerChanRead, byref(self.lickedWater.numBytesPerSamp), None)
 
-        self.grabbedDigitalBuffer[1, :] = self.lickedSucrose.ReadDigitalLines(self.lickedSucrose.numSampsPerChan, self.timeout, self.lickedSucrose.fillMode,
+        self.lickedSucrose.ReadDigitalLines(self.lickedSucrose.numSampsPerChan, self.timeout, self.lickedSucrose.fillMode,
                                                                             self.lickedSucrose.readData, self.lickedSucrose.arraySizeInBytes,
                                                                             self.lickedSucrose.sampsPerChanRead, byref(self.lickedSucrose.numBytesPerSamp), None)
 
-        self.grabbedDigitalBuffer[2, :] = self.attemptWater.ReadDigitalLines(self.attemptWater.numSampsPerChan, self.timeout, self.attemptWater.fillMode,
+        self.attemptWater.ReadDigitalLines(self.attemptWater.numSampsPerChan, self.timeout, self.attemptWater.fillMode,
                                                                             self.attemptWater.readData, self.attemptWater.arraySizeInBytes,
                                                                             self.attemptWater.sampsPerChanRead, byref(self.attemptWater.numBytesPerSamp), None)
 
-        self.grabbedDigitalBuffer[3, :] = self.attemptSucrose.ReadDigitalLines(self.attemptSucrose.numSampsPerChan, self.timeout, self.attemptSucrose.fillMode,
+        self.attemptSucrose.ReadDigitalLines(self.attemptSucrose.numSampsPerChan, self.timeout, self.attemptSucrose.fillMode,
                                                                             self.attemptSucrose.readData, self.attemptSucrose.arraySizeInBytes,
                                                                             self.attemptSucrose.sampsPerChanRead, byref(self.attemptSucrose.numBytesPerSamp), None)
+        self.grabbedDigitalBuffer[0, :] = self.lickedWater.readData.copy()
+        self.grabbedDigitalBuffer[1, :] = self.lickedSucrose.readData.copy()
+        self.grabbedDigitalBuffer[2, :] = self.attemptWater.readData.copy()
+        self.grabbedDigitalBuffer[3, :] = self.attemptSucrose.readData.copy()
 
         # Count Total Buffers
         self.totNumBuffers += 1
