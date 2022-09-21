@@ -144,5 +144,5 @@ dmypy.json
 !/DTest/
 !/BTest/
 !/Scratch/
-!/Test/
-!/Test2/
+!/Scratch/Test/
+!/Scratch/Test2/

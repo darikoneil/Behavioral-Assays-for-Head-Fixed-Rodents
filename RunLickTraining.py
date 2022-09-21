@@ -5,7 +5,7 @@ import numpy as np
 from PyDAQmx import *
 from DAQModules import DigitalGroupReader
 from LickBehaviorConfigurations import SucrosePreferenceConfig
-from HardwareConfiguration2 import HardConfig
+from HardwareConfiguration import HardConfig
 from SaveModule import Saver, Pickler
 from BehavioralCamera_Slave import BehavCam
 

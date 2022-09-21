@@ -1,5 +1,4 @@
 from RunBurrowPreference import DAQtoBurrow
-from HardwareConfiguration import HardConfig
 from testing_utility_functions import load_pickle_from_file
 from os import getcwd
 

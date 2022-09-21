@@ -7,118 +7,113 @@ class HardConfig:
     """
     def __init__(self):
 
-        self.device_dictionary = {
-            'Device1': 'NI USB-6001',
-            'Device2': 'Arduino Due',
-            'Device3': 'NI USB-6008',
-            'Device4': 'NI USB-6001',
-            'Device5': 'Arduino Uno'
-        }
-
-        # Device 2
-        self.device_2_dictionary = {
-            "Device 2 Ground A": "J4, Interfaces wit L293D HBridge",
-            "Device 2 Ground B": "Sucrose Capacitive Touch Breakout, GND",
-            "Device 2 Ground C": "Water Capacitive Touch Breakout, GND",
-            "Device 2 5V Source A": "Sucrose Capacitive Touch Breakout, VDD",
-            "Device 2 5V Source B": "Water Capacitive Touch Breakout, VDD",
-            "Device 2 Digital Pin 7": "Sucrose Capacitive Touch Breakout, OUT",
-            "Device 2 Digital Pin 6": "Water Capacitive Touch Breakout, OUT",
-        }
-
-        # Dev5
-        self.device_5_dictionary = {
-            "Dev5 Ground": "Dev4/ao1_gnd to Dev5 ground",
-            "Dev5 5V Pin": "G14, Lick Swapper Power Supply",
-            "Dev5 Ground 2": "H13, Lick Swapper Power Ground",
-            "Dev5 Digital Pin 3": "F15, Lick Swapper Signal",
-            "Dev5 Digital Pin 5": "Remover Swapper Signal",
-        }
-
-        # External Board
-        self.external_board_dictionary = {
-            "C3": "Jumper from L293D 1Y C3 to C12 to (Sucrose Solenoid)",
-            "I6": "Jumper from L293D 4Y I6 to E14 to (Water Solenoid)",
-            "B29": "Jumper from B29 to B30 to link 12V input grounds",
-            "A4": "A4 L293D GND connects to IO 32 Digital Ground on Device 3",
-            "J1": "J1 L293D VCC1 Logic Power connects to IO 31 5V Source on Device 3",
-            "C28": "C28 to L293D VVC2 Power D8",
-            "E28": "E28 to 12V Power",
-            "E30": "E30 to 12V Ground B",
-            "J13": "J13 to Lick Swapper Motor Ground",
-            "J14": "J14 to Lick Swapper Motor Power",
-            "J15": "J15 to Lick Swapper Motor Signal",
-        }
-
-        self.external_components_dictionary = {
-            "Lick Spout Swapping Servo": "GWS PICO STD",
-            "Capacitive Touch Breakouts": "AT42QT-1010",
-            "HBridge": "L293D",
-            "Solenoids": "Parker 003-0218-900",
-        }
-
-        # General DAQ Parameters
+        # Sampling Parameters
         self.timeout = np.float64(10)  # timeout parameter must be type floating 64 (units: seconds, double)
-        self.samplingRate = int(1000)  # DAQ sampling rate (units: Hz, integer)
-        self.bufferTime = int(100)  # DAQ buffering time (units: ms, integer)
-        # noinspection PyTypeChecker
-        self.buffersPerSecond = int(round(self.samplingRate/self.bufferTime))  # DAQ buffers each second (units: Hz, round integer)
-        # Samples per Buffer (units: samples, round integer) (Comment for below)
-        # noinspection PyTypeChecker
-        self.bufferSize = int(round(self.samplingRate/self.buffersPerSecond))
-        # Analog Voltage Range LIMITS (*NOTE*) (units: V, floating 64 (double))
-        self.analogVoltageRange = np.array([-10, 10], dtype=np.float64)
+        self.sampling_rate = int(1000)  # DAQ sampling rate (units: Hz, integer)
+        self.buffer_time = int(100)  # DAQ buffering time (units: ms, integer)
 
+        # Analog Input Parameters -- Serves as the master clock
+        self.analog_voltage_range = np.array([-10.0, 10.0], dtype=np.float64)
+        self.num_analog_in = int(4)
+        self.analog_chans_in = "BurrowDAQ/ai0:3"
+        # Imaging Sync
+        self.imaging_sync_channel_name = "BurrowDAQ/ai0"
+        self.imaging_sync_channel_id = int(0)
+        # Motor Position
+        self.motor_pos_channel_name = "BurrowDAQ/ai1"
+        self.motor_pos_channel_id = int(1)
+        # Force Readout
+        self.force_channel_name = "BurrowDAQ/ai2"
+        self.force_channel_id = int(2)
+        # Dummy Channel - Reserved for future use
+        self.dummy_channel_name = "BurrowDAQ/ai3"
+        self.dummy_channel_id = int(3)
 
-        # Burrow Configuration
+        # Digital Input Parameters
+        self.num_digital_in = int(5)
+        self.digital_chans_in = "BurrowDAQ/port0/line0:4"
+        # Gate Channel
+        self.gate_triggered_channel_name = "BurrowDAQ/port0/line0"
+        self.gate_triggered_channel_id = int(0)
+        # Reward Water
+        self.water_reward_channel_name = "BurrowDAQ/port0/line1"
+        self.water_reward_channel_id = int(1)
+        # Reward Sucrose
+        self.sucrose_reward_channel_name = "BurrowDAQ/port0/line2"
+        self.sucrose_reward_channel_id = int(2)
+        # Licking Water
+        self.licking_water_channel_name = "BurrowDAQ/port0/line3"
+        self.licking_water_channel_id = int(3)
+        # Licking Sucrose
+        self.licking_sucrose_channel_name = "BurrowDAQ/port0/line4"
+        self.licking_sucrose_channel_id = int(4)
 
+        # Analog Outputs Parameters
+        self.num_analog_out = int(2)
+        self.analog_chans_out = "BurrowDAQ/ao0:1"
         # Motor Settings # Note the external motor power source is 12V
-        self.motorPhysicalRange = np.array([0, 100], dtype=np.float64)
-        self.motorVoltageRange = np.array([0.001, 4.999], dtype=np.float64)
-
+        self.motor_channel = "BurrowDAQ/ao0"
+        self.motor_voltage_range = np.array([0.001, 4.999], dtype=np.float64)
+        self.motor_physical_range = np.array([0, 100], dtype=np.float64)
         # UCS Settings
-        self.ucsOutRange = np.array([0, 5], dtype=np.float64)
+        self.ucs_out_range = np.array([0, 5], dtype=np.float64)
+        self.ucs_channel = "BurrowDAQ/ao1"
 
-        # Analog Outputs - Burrow
-        self.numAnalogOut = int(2)
-        self.motorChannel = "Dev1/ao0"
-        self.uCSChannel = "Dev1/ao1"
-        self.analogChansOut = "Dev1/ao0:1"
+        # Digital Outputs Parameters
+        self.num_digital_out_port_0 = int(3)
+        self.digital_chans_out_port_0 = "BurrowDAQ/port0/line5:7"
+        self.num_digital_out_port_1 = int(4)
+        self.digital_chans_out_port_1 = "BurrowDAQ/port1/line0:3"
+        # Gate Driver
+        self.gate_driver_channel_name = "BurrowDAQ/port0/line5"
+        self.gate_driver_channel_id = int(5)
+        # CS Indicator
+        self.cs_channel_name = "BurrowDAQ/port0/line6"
 
-        # Analog Inputs - Burrow
-        self.numAnalogIn = int(2)
-        self.imagingChannel = "Dev1/ai0"
-        self.imagingChannelInt = int(0)
-        self.propChannel = "Dev1/ai1"
-        self.propChannelInt = int(1)
-        self.analogChansIn = "Dev1/ai0:1"
+        self.cs_channel_id = int(6)
+        # Trial Indicator
+        self.trial_channel_name = "BurrowDAQ/port0/line7"
+        self.trial_channel_id = int(7)
+        # Water Reward Permission
+        self.permission_water_channel_name = "BurrowDAQ/port1/line0"
+        self.permission_water_channel_id = int(0)
+        # Sucrose Reward Permission
+        self.permission_sucrose_channel_name = "BurrowDAQ/port1/line1"
+        self.permission_sucrose_channel_id = int(1)
+        # Swap Licking Spouts
+        self.swap_lick_spouts_channel_name = "BurrowDAQ/port1/line2"
+        self.swap_lick_spouts_channel_id = int(2)
+        # Remove Licking Spouts
+        self.remove_lick_spouts_channel_name = "BurrowDAQ/port1/line3"
+        self.remove_lick_spots_channel_id = int(3)
 
-        # Digital Outputs - Burrow
-        self.numDigitalOut = int(3)  # number of digital out channels
-        self.cSChannel = "Dev1/port0/line1"
-        self.trialFlaggerChannel = "Dev1/port1/line2"
-        self.digitalChansOut = "Dev1/port1/line0:2"
-        self.gateOutDriveChannel = "Dev1/port1/line0"
+    @property
+    def buffer_size(self):
+        """
+        Samples per Buffer (units: samples, round integer) (Comment for below)
 
-        # Digital Inputs (format reflects maintainability)
-        self.numDigitalIn = int(1)  # number of digital out channels
-        self.gateChannel = "Dev1/port0/line3"
-        self.digitalChansIn = "Dev1/port0/line3"
-        self.gateChannelInt = int(0)  # For maintainability
+        :rtype: int
+        """
 
-        # Reward Configuration
+        try:
+            _buffer_size = self.sampling_rate/self.buffers_per_second
+            assert(isinstance(_buffer_size, int))
+            return _buffer_size
+        except AssertionError:
+            print("Buffer size must be a round integer!!!")
+            return
 
-        # Digital Outputs - Reward
-        self.numDigitalOut_Reward = int(3)
-        self.lickSwapChannel = "Dev4/port1/line1" # Motor command out to Dev5 Digital Pin "7"
-        self.sucroseChannel = "Dev4/port1/line2" # Sucrose H-bridge enable out to L293D 1,2EN, "A1"
-        self.waterChannel = "Dev4/port1/line3" # Water H-bridge enable out to L293D 3,4EN, "G8"
+    @property
+    def buffers_per_second(self):
+        """
+        DAQ buffers each second (units: Hz, round integer)
 
-        # Digital Inputs - Lick-Swapper
-        self.numDigitalIn_Reward = int(4)
-        self.deliveredSucroseChannel = "Dev4/port0/line0" # Input from Device 2 Digital Pin "13"
-        self.deliveredWaterChannel = "Dev4/port0/line1" # Input from Device 2 Digital Pin "12"
-        self.lickedSucroseChannel = "Dev4/port0/line2" # Input from Device 2 Digital Pin "11"
-        self.lickedWaterChannel = "Dev4/port0/line3" # Input from Device 2 Digital Pin "10"
-        self.sucrose_calibration_pin = "Dev4/port0/line6" # Output to Device 2 Digital Pin "5"
-        self.water_calibration_pin = "Dev4/port0/line7" # Output to Device 2 Digital Pin "4"
+        :rtype: int
+        """
+        try:
+            _buffers_per_second = self.sampling_rate/self.buffer_time
+            assert(isinstance(_buffers_per_second, int))
+            return _buffers_per_second
+        except AssertionError:
+            print("Buffers per second must be a round integer!!!")
+            return

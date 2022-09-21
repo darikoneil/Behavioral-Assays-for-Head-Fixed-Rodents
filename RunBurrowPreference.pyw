@@ -1,8 +1,6 @@
-import os
-
 from PyDAQmx import *
 
-from PyQt6 import QtGui, QtCore, Qt, QtWidgets
+from PyQt6 import QtGui, QtCore, QtWidgets
 from BurrowPreference_Real_GUI import Ui_MainWindow
 from BurrowPreferenceMachine import BurrowPreferenceTask
 from LickBehaviorConfigurations import BurrowPreferenceConfig
@@ -15,8 +13,6 @@ from ctypes import byref
 import numpy as np
 from time import time
 
-
-from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 
 global DAQmx_Val_RSE, DAQmx_Val_Volts, DAQmx_Val_Rising, DAQmx_Val_ContSamps, DAQmx_Val_Acquired_Into_Buffer
@@ -57,43 +53,43 @@ class DAQtoBurrow(Task):
         
         # Setup DAQ - General DAQ Parameters - Put into class because might be iterated on
         self.timeout = _hardware_config.timeout  # timeout parameter must be type floating 64 (units: seconds, double)
-        self.samplingRate = _hardware_config.samplingRate  # DAQ sampling rate (units: Hz, integer)
-        self.bufferTime = _hardware_config.bufferTime  # DAQ buffering time (units: ms, integer)
-        self.buffersPerSecond = _hardware_config.buffersPerSecond  # DAQ buffers each second (units: Hz, round integer)
+        self.sampling_rate = _hardware_config.sampling_rate  # DAQ sampling rate (units: Hz, integer)
+        self.buffer_time = _hardware_config.buffer_time  # DAQ buffering time (units: ms, integer)
+        self.buffers_per_second = _hardware_config.buffers_per_second  # DAQ buffers each second (units: Hz, round integer)
         # Samples per Buffer (units: samples, round integer) (Comment for below)
-        self.bufferSize = _hardware_config.bufferSize
+        self.buffer_size = _hardware_config.buffer_size
         self.totNumBuffers = int() # integer record of number of buffers collected (running)
 
         # Setup DAQ - Device 1 - Instance Analog Inputs ( Multi-Channel Matrix with Single Grab )
-        self.DAQAnalogInBuffer = np.tile(np.zeros((self.bufferSize,), dtype=np.float64), (_hardware_config.numAnalogIn, 1))
-        self.numSamplesPerBlock = np.uint32(_hardware_config.numAnalogIn * self.bufferSize)
-        self.voltageRangeIn = _hardware_config.analogVoltageRange
+        self.DAQAnalogInBuffer = np.tile(np.zeros((self.buffer_size,), dtype=np.float64), (_hardware_config.num_analog_in, 1))
+        self.numSamplesPerBlock = np.uint32(_hardware_config.num_analog_in * self.buffer_size)
+        self.voltageRangeIn = _hardware_config.analog_voltage_range
         self.units = int32()  # read units (type 32b integer, this implies default units)
-        self.CreateAIVoltageChan(_hardware_config.analogChansIn, "Analog In", DAQmx_Val_RSE, self.voltageRangeIn[0],
+        self.CreateAIVoltageChan(_hardware_config.analog_chans_in, "Analog In", DAQmx_Val_RSE, self.voltageRangeIn[0],
                                  self.voltageRangeIn[1], DAQmx_Val_Volts, None)
         # RSE is reference single-ended, Val_Volts flags voltage units
-        self.CfgSampClkTiming("", self.samplingRate, DAQmx_Val_Rising, DAQmx_Val_ContSamps, self.bufferSize)
+        self.CfgSampClkTiming("", self.sampling_rate, DAQmx_Val_Rising, DAQmx_Val_ContSamps, self.buffer_size)
         # Val rising means on the rising edge, cont samps is continuous sampling
-        self.AutoRegisterEveryNSamplesEvent(DAQmx_Val_Acquired_Into_Buffer, self.bufferSize, 0, name='EveryNCallback')
-        # Callback every bufferSize over time = bufferSize*samplingRate
+        self.AutoRegisterEveryNSamplesEvent(DAQmx_Val_Acquired_Into_Buffer, self.buffer_size, 0, name='EveryNCallback')
+        # Callback every buffer_size over time = buffer_size*sampling_rate
         self.AutoRegisterDoneEvent(0, name='DoneCallback')  # Flag Callback Executed
 
         # Setup DAQ - Device 1 - Instance Analog Output
         # | Motor Command
-        self.motorVoltageRange = _hardware_config.motorVoltageRange  # Range of motor voltage (units: V, floating 64)
+        self.motor_voltage_range = _hardware_config.motor_voltage_range  # Range of motor voltage (units: V, floating 64)
         self.motorOut = Task()  # Instance Analog Out Task Object
         self.motorOut.numSamples = int(1)  # Analog Out Length (units: samples, integer)
         self.motorOut.units = int32()  # units of analog out (units: Volts, signed 32b integer)
-        self.motorOut.CreateAOVoltageChan(_hardware_config.motorChannel, "Motor Out", self.motorVoltageRange[0],
-                                          self.motorVoltageRange[1], DAQmx_Val_Volts, None)
+        self.motorOut.CreateAOVoltageChan(_hardware_config.motor_channel, "Motor Out", self.motor_voltage_range[0],
+                                          self.motor_voltage_range[1], DAQmx_Val_Volts, None)
 
         # Setup DAQ - Device 1 - Instance Digital Outputs
         # | Gate Out Driver (For Open Collector)
         self.gateOutDriver = Task()
-        self.gateOutDriver.CreateDOChan(_hardware_config.gateOutDriveChannel, "Gate Drive Out", DAQmx_Val_ChanForAllLines)
+        self.gateOutDriver.CreateDOChan(_hardware_config.gate_driver_channel_name, "Gate Drive Out", DAQmx_Val_ChanForAllLines)
 
         self.trialFlagger = Task()
-        self.trialFlagger.CreateDOChan(_hardware_config.trialFlaggerChannel, "Trial Flagger", DAQmx_Val_ChanForAllLines)
+        self.trialFlagger.CreateDOChan(_hardware_config.trial_channel_name, "Trial Flagger", DAQmx_Val_ChanForAllLines)
 
         # Setup DAQ - Device 1 - Instance Digital Inputs
         # | Gate Trigger Input
@@ -106,7 +102,7 @@ class DAQtoBurrow(Task):
         self.gateTrigger.numBytesPerSamp = int32()  # bytes per sample (signed 32b integer)
         # number of elements inn readArray that constitutes a sample per channel (signed 32b integer)
         self.gateTrigger.arraySizeInBytes = self.gateTrigger.readData.__len__()
-        self.gateTrigger.CreateDIChan(_hardware_config.gateChannel, "Gate In", DAQmx_Val_ChanForAllLines)
+        self.gateTrigger.CreateDIChan(_hardware_config.gate_triggered_channel_name, "Gate In", DAQmx_Val_ChanForAllLines)
 
         # Setup Data Buffer Variables - Device 1
         # Passed Data Variables: It's better to LEAVE a buffer unread and skip it than to error out of a trial
@@ -114,79 +110,9 @@ class DAQtoBurrow(Task):
         self.grabbedGateTriggerBuffer = self.gateTrigger.readData.copy()  # Single Grab of Digital Data
 
         # ID Important Input Channels for Reference during Analysis - Device 1
-        self.imagingChannel = _hardware_config.imagingChannelInt
-        self.gateChannel = _hardware_config.gateChannelInt
-        self.propChannel = _hardware_config.propChannelInt
-
-        # Setup DAQ - Device 3 - Instance Digital Outputs
-        # | Lick Swapper Command
-        self.lickSwapper = Task()
-        self.lickSwapper.CreateDOChan(_hardware_config.lickSwapChannel, "Lick Swap Out", DAQmx_Val_ChanForAllLines)
-        # | Sucrose Channel Command
-        self.sucroseDriver = Task()
-        self.sucroseDriver.CreateDOChan(_hardware_config.sucroseChannel, "Sucrose Drive Out", DAQmx_Val_ChanForAllLines)
-        # | Water Channel Command
-        self.waterDriver = Task()
-        self.waterDriver.CreateDOChan(_hardware_config.waterChannel, "Water Drive Out", DAQmx_Val_ChanForAllLines)
-
-        # Setup DAQ - Device 3 - Instance Digital Inputs
-        # | Attempted Sucrose Delivery
-        self.attemptSucrose = Task()
-        self.attemptSucrose.fillMode = np.bool_(1)  # Flag interleaved samples (32b boolean)
-        self.attemptSucrose.sampsPerChanRead = int32()  # number of samples per channel (number of read datas per chan)
-        self.attemptSucrose.readData = np.full(100, 0, dtype=np.uint8)  # unsigned 8b integer
-        self.attemptSucrose.numSampsPerChan = np.int32(self.attemptSucrose.readData.__len__())  # samples per chan
-        # (units: samples, signed 32b integer)
-        self.attemptSucrose.numBytesPerSamp = int32()  # bytes per sample (signed 32b integer)
-        # number of elements inn readArray that constitutes a sample per channel (signed 32b integer)
-        self.attemptSucrose.arraySizeInBytes = self.attemptSucrose.readData.__len__()
-        self.attemptSucrose.CreateDIChan(_hardware_config.deliveredSucroseChannel, "Attempted Sucrose", DAQmx_Val_ChanForAllLines)
-        # | Attempted Water Delivery
-        self.attemptWater = Task()
-        self.attemptWater.fillMode = np.bool_(1)  # Flag interleaved samples (32b boolean)
-        self.attemptWater.sampsPerChanRead = int32()  # number of samples per channel (number of read datas per chan)
-        self.attemptWater.readData = np.full(100, 0, dtype=np.uint8)  # unsigned 8b integer
-        self.attemptWater.numSampsPerChan = np.int32(self.attemptWater.readData.__len__())  # samples per chan
-        # (units: samples, signed 32b integer)
-        self.attemptWater.numBytesPerSamp = int32()  # bytes per sample (signed 32b integer)
-        # number of elements inn readArray that constitutes a sample per channel (signed 32b integer)
-        self.attemptWater.arraySizeInBytes = self.attemptWater.readData.__len__()
-        self.attemptWater.CreateDIChan(_hardware_config.deliveredWaterChannel, "Attempted Water", DAQmx_Val_ChanForAllLines)
-        # | Licked Sucrose
-        self.lickedSucrose = Task()
-        self.lickedSucrose.fillMode = np.bool_(1)  # Flag interleaved samples (32b boolean)
-        self.lickedSucrose.sampsPerChanRead = int32()  # number of samples per channel (number of read datas per chan)
-        self.lickedSucrose.readData = np.full(100, 0, dtype=np.uint8)  # unsigned 8b integer
-        self.lickedSucrose.numSampsPerChan = np.int32(self.lickedSucrose.readData.__len__())  # samples per chan
-        # (units: samples, signed 32b integer)
-        self.lickedSucrose.numBytesPerSamp = int32()  # bytes per sample (signed 32b integer)
-        # number of elements inn readArray that constitutes a sample per channel (signed 32b integer)
-        self.lickedSucrose.arraySizeInBytes = self.lickedSucrose.readData.__len__()
-        self.lickedSucrose.CreateDIChan(_hardware_config.lickedSucroseChannel, "Licked Sucrose", DAQmx_Val_ChanForAllLines)
-        # | Licked Water
-        self.lickedWater = Task()
-        self.lickedWater.fillMode = np.bool_(1)  # Flag interleaved samples (32b boolean)
-        self.lickedWater.sampsPerChanRead = int32()  # number of samples per channel (number of read datas per chan)
-        self.lickedWater.readData = np.full(100, 0, dtype=np.uint8)  # unsigned 8b integer
-        self.lickedWater.numSampsPerChan = np.int32(self.lickedWater.readData.__len__())  # samples per chan
-        # (units: samples, signed 32b integer)
-        self.lickedWater.numBytesPerSamp = int32()  # bytes per sample (signed 32b integer)
-        # number of elements inn readArray that constitutes a sample per channel (signed 32b integer)
-        self.lickedWater.arraySizeInBytes = self.lickedWater.readData.__len__()
-        self.lickedWater.CreateDIChan(_hardware_config.lickedWaterChannel, "Licked Water", DAQmx_Val_ChanForAllLines)
-
-        # Setup Data Buffer Variables - Device 3
-        # Passed Data Variables: It's better to LEAVE a buffer unread and skip it than to error out of a trial
-        self.attemptSucroseBuffer = self.attemptSucrose.readData.copy()  # Single Grab of Digital Data
-        self.attemptWaterBuffer = self.attemptWater.readData.copy()  # Single Grab of Digital Data
-        self.lickedSucroseBuffer = self.lickedSucrose.readData.copy()  # Single Grab of Digital Data
-        self.lickedWaterBuffer = self.lickedWater.readData.copy()  # Single Grab of Digital Data
-
-        # ID Important Input Channels for Reference during Analysis - Device 1
-        self.attemptSucroseChannel = _hardware_config.deliveredSucroseChannel
-        self.attemptWaterChannel = _hardware_config.deliveredWaterChannel
-        self.lickedSucroseChannel = _hardware_config.lickedSucroseChannel
-        self.lickedWaterChannel = _hardware_config.lickedWaterChannel
+        self.imagingChannel = _hardware_config.imaging_sync_channel_id
+        self.gateChannel = _hardware_config.gate_triggered_channel_id
+        self.propChannel = _hardware_config.motor_pos_channel_id
 
         # Prep Data Buffers
         self.bufferedAnalogDataToSave = np.array(self.DAQAnalogInBuffer.copy(), dtype=np.float64)
@@ -222,7 +148,7 @@ class DAQtoBurrow(Task):
         # _start_time = time()
 
         # Read Device 1 Analog Inputs
-        self.ReadAnalogF64(self.bufferSize, self.timeout, DAQmx_Val_GroupByChannel, self.DAQAnalogInBuffer,
+        self.ReadAnalogF64(self.buffer_size, self.timeout, DAQmx_Val_GroupByChannel, self.DAQAnalogInBuffer,
                            self.numSamplesPerBlock, byref(self.units), None)
 
         self.grabbedAnalogBuffer = self.DAQAnalogInBuffer.copy()  # Grab the buffer now and make NI drivers happy if we have any lags
@@ -490,9 +416,9 @@ class MasterGUI(QtWidgets.QMainWindow):
         # Plotting Buffer Construction & Parameters
         self.plotPeriod = int(1)
         self.plottingRange = int(5000)  # Length of plotting x-axis (units: ms, integer)
-        self.plottingSamples = int(round((self.plottingRange / 1000) * self.DAQ.samplingRate))
+        self.plottingSamples = int(round((self.plottingRange / 1000) * self.DAQ.sampling_rate))
         # Number of Samples in plots (units: samples, round integer)
-        self.plottingIterations = int(self.plottingSamples / self.DAQ.bufferSize)  # number of grabs in one plot
+        self.plottingIterations = int(self.plottingSamples / self.DAQ.buffer_size)  # number of grabs in one plot
         self.plottingIndex = int(self.plottingIterations - 1)  # Index for most recent data
         # Vector of time to plot on X-axis (below)
         self.plottingTimeVector = np.linspace(start=-self.plottingRange, stop=0, num=self.plottingSamples)
@@ -546,9 +472,9 @@ class MasterGUI(QtWidgets.QMainWindow):
         _start_catch = time()
 
         # index for adding recent data
-        _indexLong = [self.plottingIndex*self.DAQ.bufferSize, self.plottingIndex*self.DAQ.bufferSize+self.DAQ.bufferSize]
+        _indexLong = [self.plottingIndex*self.DAQ.buffer_size, self.plottingIndex*self.DAQ.buffer_size+self.DAQ.buffer_size]
 
-        self.plottingMotor = np.roll(self.plottingMotor, -self.DAQ.bufferSize)
+        self.plottingMotor = np.roll(self.plottingMotor, -self.DAQ.buffer_size)
 
         self.plottingMotor[_indexLong[0]:_indexLong[1]] = self.DAQ.grabbedAnalogBuffer[self.DAQ.propChannel, ]
 
@@ -561,10 +487,10 @@ class MasterGUI(QtWidgets.QMainWindow):
 
         self.catch_times.append(_timeToCatch)
 
-        if(self.DAQ.bufferTime/2) < _timeToCatch:
+        if(self.DAQ.buffer_time/2) < _timeToCatch:
             print("Signals are being acquired faster than they can be caught")
             print("Time to catch: ", _timeToCatch)
-            print("Buffer Length: ", self.DAQ.bufferTime)
+            print("Buffer Length: ", self.DAQ.buffer_time)
 
     def drawingSignals(self):
         self.updatePlots()
@@ -635,7 +561,7 @@ class MasterGUI(QtWidgets.QMainWindow):
         self.ui.motor_controller.setValue(100)
 
     def moveMotor(self):
-        _sliderValue = np.float64(self.ui.motor_controller.value()*(self.DAQ.motorVoltageRange[1]/self.ui.motor_controller.maximum()))
+        _sliderValue = np.float64(self.ui.motor_controller.value()*(self.DAQ.motor_voltage_range[1]/self.ui.motor_controller.maximum()))
         self.DAQ.motorOut.WriteAnalogF64(self.DAQ.motorOut.numSamples, np.bool_(1),
                                          self.DAQ.timeout, DAQmx_Val_GroupByChannel, np.array([_sliderValue]),
                                          self.DAQ.motorOut.units, None)
