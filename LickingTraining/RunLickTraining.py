@@ -1,4 +1,5 @@
 import numpy as np
+# noinspection PyUnresolvedReferences
 from ctypes import byref
 from PyDAQmx import *
 from GenericModules.DAQModules import DigitalGroupReader
