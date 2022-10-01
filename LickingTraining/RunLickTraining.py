@@ -31,8 +31,12 @@ class DAQtoLickTraining(Task):
         # Training Parameters
         self.animal_id = self.lick_training_config.animal_id
         self.single_lick_volume = self.lick_training_config.single_lick_volume
-        self.total_rewards_allowed = self.lick_training_config.total_rewards_allowed
-        self.trial_rewards_limit = self.lick_training_config.licks_per_trial
+        self.total_rewards_allowed = self.lick_training_config.total_rewards_allowed_given_trials
+        self.trial_rewards_limit = self.lick_training_config.rewards_per_trial
+        self.total_trials = self.lick_training_config.num_trials
+        self.spout_index = self.lick_training_config.spout_index
+        self.wet_starts = self.lick_training_config.wet_starts
+        self.dual_starts = self.lick_training_config.dual_starts
 
         # Training Flags
         self.current_state = "Setup"
@@ -152,6 +156,7 @@ class DAQtoLickTraining(Task):
         self.bufferedDigitalDataToSave = np.append(self.bufferedDigitalDataToSave, self.grabbedDigitalBuffer, axis=1)
         self.bufferedCurrentSpout = np.append(self.bufferedCurrentSpout, self.current_spout)
 
+        # Camera
         if self.cameras_on:
             self.master_camera.currentTrial = self.current_trial
             self.master_camera.currentBuffer = self.totNumBuffers - 1
@@ -229,29 +234,60 @@ class DAQtoLickTraining(Task):
         self.initialize_permission()
 
     def advance_trial(self):
-        self.hold = True
+        self.restrict_permission()
         self.current_trial += 1
         self.current_state = str(self.current_trial)
         self.current_trial_rewards = 0
-        self.swap_permission()
-        self.hold = False
+        self.current_spout = self.spout_index[self.current_trial]
+        if self.current_trial <= self.dual_starts:
+            self.open_permission()
+            if self.current_trial <= self.wet_starts:
+                self.wet_start_water()
+                self.wet_start_sucrose()
+        if self.current_spout == "Water":
+            self.turn_on_water()
+            if self.current_trial <= self.wet_starts:
+                self.wet_start_water()
+        elif self.current_spout == "Sucrose":
+            self.turn_on_sucrose()
+            if self.current_trial <= self.wet_starts:
+                self.wet_start_sucrose()
 
     def swap_permission(self):
         if self.current_spout == "Water":
-            self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
-            self.permissions.data[[self.permissions_water_channel_id, self.permissions_sucrose_channel_id]] = 0, 1
-            self.permissions.WriteDigitalLines(self.permissions.fill_mode, self.permissions.units,
-                                               self.permissions.timeout, DAQmx_Val_GroupByChannel,
-                                               self.permissions.data, None, None)
+            self.turn_on_sucrose()
             self.current_spout = "Sucrose"
         elif self.current_spout == "Sucrose":
-            self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
-            self.permissions.data[[self.permissions_water_channel_id, self.permissions_sucrose_channel_id]] = 1, 0
-            self.permissions.WriteDigitalLines(self.permissions.fill_mode, self.permissions.units,
-                                               self.permissions.timeout, DAQmx_Val_GroupByChannel,
-                                               self.permissions.data, None, None)
+            self.turn_on_water()
             self.current_spout = "Water"
-            
+
+    def restrict_permission(self):
+        self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
+        self.permissions.WriteDigitalLines(self.permissions.fill_mode, self.permissions.units,
+                                           self.permissions.timeout, DAQmx_Val_GroupByChannel,
+                                           self.permissions.data, None, None)
+
+    def turn_on_sucrose(self):
+        self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
+        self.permissions.data[[self.permissions_water_channel_id, self.permissions_sucrose_channel_id]] = 0, 1
+        self.permissions.WriteDigitalLines(self.permissions.fill_mode, self.permissions.units,
+                                           self.permissions.timeout, DAQmx_Val_GroupByChannel,
+                                           self.permissions.data, None, None)
+
+    def turn_on_water(self):
+        self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
+        self.permissions.data[[self.permissions_water_channel_id, self.permissions_sucrose_channel_id]] = 1, 0
+        self.permissions.WriteDigitalLines(self.permissions.fill_mode, self.permissions.units,
+                                           self.permissions.timeout, DAQmx_Val_GroupByChannel,
+                                           self.permissions.data, None, None)
+
+    def open_permission(self):
+        self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
+        self.permissions.data[[self.permissions_water_channel_id, self.permissions_sucrose_channel_id]] = 1, 1
+        self.permissions.WriteDigitalLines(self.permissions.fill_mode, self.permissions.units,
+                                           self.permissions.timeout, DAQmx_Val_GroupByChannel,
+                                           self.permissions.data, None, None)
+
     def initialize_permission(self):
         if self.current_spout == "Water":
             self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
@@ -267,13 +303,10 @@ class DAQtoLickTraining(Task):
                                                self.permissions.data, None, None)
 
     def check_if_finished(self):
-        if self.running_rewards >= self.total_rewards_allowed:
+        if self.running_rewards >= self.total_rewards_allowed or self.current_trial > self.total_trials:
             self.end_training()
         elif self.current_trial_rewards >= self.trial_rewards_limit:
-            self.current_trial += 1
-            self.current_state = str(self.current_trial)
-            self.current_trial_rewards = 0
-            self.swap_permission()
+            self.advance_trial()
 
     def save_data(self):
         print("Saving Analog Data...")
