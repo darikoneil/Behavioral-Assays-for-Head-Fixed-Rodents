@@ -128,7 +128,6 @@ class LickTrainingConfig:
         self._data_path = "".join([self.base_path, "\\Data\\", self.animal_id])
 
         # Behavior Parameters
-        self._habituation_duration = 5 # Habituation duration in seconds, integer
         self._single_lick_volume = 3.8 # liquid dispensed in response to single lick (uL)
         self._max_liquid_intake = 1.0 # upper limit of total liquid consumption (mL)
         self._rewards_per_trial = 25 # Number of rewards per trial
@@ -187,24 +186,6 @@ class LickTrainingConfig:
         return self._data_path
 
     @property
-    def habituation_duration(self):
-        """
-        Duration of habituation in seconds
-
-        :rtype: int
-        """
-        return self._habituation_duration
-
-    @property
-    def habituation_duration_minutes(self):
-        """
-        Duration of habituation in minutes
-
-        :rtype: float
-        """
-        return self._habituation_duration/60
-
-    @property
     def single_lick_volume(self):
         """
         Volume of liquid release upon single lick in microliters
@@ -233,7 +214,7 @@ class LickTrainingConfig:
 
         :rtype: int
         """
-        return np.floor(self._max_liquid_intake*1000/self._single_lick_volume, dtype=int)
+        return np.floor(self._max_liquid_intake*1000/self._single_lick_volume).astype(int)
 
     @property
     def total_rewards_allowed_given_trials(self):
@@ -266,7 +247,7 @@ class LickTrainingConfig:
 
        :rtype: int
        """
-        return np.floor(self.total_rewards_allowed/self._rewards_per_trial, dtype=int)
+        return np.floor(self.total_rewards_allowed/self._rewards_per_trial).astype(int)
 
     @property
     def volume_per_trial(self):
@@ -342,9 +323,10 @@ class LickTrainingConfig:
         for i in range(_num_stages):
             random.shuffle(_states)
             SpoutIndex.extend(_states)
-            if len(SpoutIndex) != self.num_trials:
-                random.shuffle(_states)
-                SpoutIndex.extend(1)
+        if SpoutIndex.__len__() != self.num_trials:
+            random.shuffle(_states)
+            SpoutIndex.extend(_states)
+            SpoutIndex = SpoutIndex[0:-1]
 
         return tuple(SpoutIndex)
 
@@ -370,10 +352,14 @@ if __name__ == '__main__':
     print("".join(["MouseID: ", LTC.animal_id]))
     print("".join(["Base Directory: ", LTC.base_path]))
     print("".join(["Data Folder: ", LTC.data_path]))
-    print("".join(["Habituation Duration: ", str(LTC.habituation_duration)]))
-    print("".join(["Licks Per Trial: ", str(LTC.rewards_per_trial)]))
+    print("".join(["Rewards Per Trial: ", str(LTC.rewards_per_trial)]))
     print("".join(["Lick Volume: ", str(LTC.single_lick_volume)]))
     print("".join(["Maximal Intake: ", str(LTC.max_liquid_intake)]))
-    print("".join(["Configuration Validated: ", str(LTC.validated)]))
+    print("".join(["Operational Maximal Intake: ", str(LTC.intake_limit_given_trials_mL)]))
     print("".join(["Total Rewards Allowed: ", str(LTC.total_rewards_allowed)]))
+    print("".join(["Operational Rewards Limit: ", str(LTC.total_rewards_allowed_given_trials)]))
+    print("".join(["Number of Trials: ", str(LTC.num_trials)]))
+    print("".join(["Spout Permission Index: ", str(LTC.spout_index)]))
+    print("".join(["Spout Index Length: ", str(LTC.spout_index.__len__())]))
+    print("".join(["Configuration Validated: ", str(LTC.validated)]))
     cleanup_lick_training_config(getcwd())

@@ -62,9 +62,6 @@ def test_lick_training_config(*args):
     # data path
     assert(isinstance(lick_training_config.data_path, str))
 
-    # habituation duration
-    assert(isinstance(lick_training_config.habituation_duration, int))
-
     # single lick vol
     assert(isinstance(lick_training_config.single_lick_volume, float))
 
@@ -72,7 +69,13 @@ def test_lick_training_config(*args):
     assert(isinstance(lick_training_config.max_liquid_intake, float))
 
     # licks per trial
-    assert(isinstance(lick_training_config.licks_per_trial, int))
+    assert(isinstance(lick_training_config.rewards_per_trial, int))
+
+    # spout index
+    assert(isinstance(lick_training_config.spout_index, tuple))
+
+    # index shape = trial shape
+    assert(lick_training_config.spout_index.__len__() == lick_training_config.num_trials)
 
 
 def cleanup_lick_training_config(BasePath):
