@@ -1,5 +1,6 @@
 from os import mkdir, getcwd
-from TestingModules.TypeCheck import test_burrow_preference_config
+from TestingModules.TypeCheck import test_burrow_preference_config, test_lick_training_config, \
+    cleanup_burrow_preference_config, cleanup_lick_training_config
 
 
 class BurrowPreferenceConfig:
@@ -11,9 +12,9 @@ class BurrowPreferenceConfig:
         self.validated = False
 
         # General Parameters (Protected with no single setters)
-        self._animal_id = "ATest"
+        self._animal_id = "Test_Mouse"
         self._base_path = getcwd() # or manually enter a filepath
-        self._data_path = "".join([self.base_path, "\\", self.animal_id])
+        self._data_path = "".join([self.base_path, "\\Data\\", self.animal_id])
 
         # Behavior Parameters
         self._habituation_duration = 5 # Habituation duration in seconds, integer
@@ -111,23 +112,23 @@ class BurrowPreferenceConfig:
             return False
 
 
-class SucrosePreferenceConfig:
+class LickTrainingConfig:
     """
-    Configuration File for Sucrose Preference Task
+    Configuration File for Lick Training Task
     """
     def __init__(self, *args):
         # initialize validation flag
         self.validated = False
 
         # General Parameters (Protected with no single setters)
-        self._animal_id = "Mouse Name"
+        self._animal_id = "Test_Mouse"
         self._base_path = getcwd() # or manually enter a filepath
-        self._data_path = "".join([self.base_path, "\\", self.animal_id])
+        self._data_path = "".join([self.base_path, "\\Data\\", self.animal_id])
 
         # Behavior Parameters
         self._habituation_duration = 5 # Habituation duration in seconds, integer
         self._single_lick_volume = 3.8 # liquid dispensed in response to single lick (uL)
-        self._max_liquid_intake = 1 # upper limit of total liquid consumption (mL)
+        self._max_liquid_intake = 1.0 # upper limit of total liquid consumption (mL)
         self._licks_per_trial = 25 # Number of licks per trial
         self._reward_duration_water = 20.125 # ms
         self._reward_duration_sucrose = 18.5 # ms
@@ -142,15 +143,15 @@ class SucrosePreferenceConfig:
                 return
 
         # Check Integrity
-        # self.validated = self.validation()
+        self.validated = self.validation()
 
-        # try:
-        #     assert(self.validated is True)
-        # except AssertionError:
-            # print("Configuration could not be validated")
-            # return
-        # except AttributeError:
-         #    return
+        try:
+            assert(self.validated is True)
+        except AssertionError:
+            print("Configuration could not be validated")
+            return
+        except AttributeError:
+            return
 
     @property
     def animal_id(self):
@@ -202,7 +203,7 @@ class SucrosePreferenceConfig:
         """
         Volume of liquid release upon single lick in microliters
 
-        :rtype: int
+        :rtype: float
         """
         return self._single_lick_volume
 
@@ -215,7 +216,7 @@ class SucrosePreferenceConfig:
         """
         Maximal intake of liquid permitted in milliliters
 
-        :rtype: int
+        :rtype: float
         """    
         return self._max_liquid_intake
 
@@ -224,7 +225,7 @@ class SucrosePreferenceConfig:
         """
         Number of licks permitted before maximum liquid intake
 
-        :rtype: int
+        :rtype: float
         """
         return self._max_liquid_intake*1000/self._single_lick_volume
 
@@ -242,7 +243,7 @@ class SucrosePreferenceConfig:
         """
         Liquid dispensed per trial in uL
 
-        :rtype: int
+        :rtype: float
         """
         return self._licks_per_trial*self.single_lick_volume
 
@@ -281,12 +282,13 @@ class SucrosePreferenceConfig:
       #   """
       #   return self._swap_index
 
-    # def validation(self):
-      #   try:
-         #    test_sucrose_preference_config(self)
-        #    return True
-      #   except RuntimeError:
-      #       return False
+
+    def validation(self):
+        try:
+            test_lick_training_config(self)
+            return True
+        except RuntimeError:
+            return False
 
    #  @staticmethod
    #  def generate_swap_order_shuffled(num_trials):
@@ -325,14 +327,16 @@ if __name__ == '__main__':
     print("".join(["Habituation Duration: ", str(BPC.habituation_duration)]))
     print("".join(["Behavior Duration: ", str(BPC.behavior_duration)]))
     print("".join(["Configuration Validated: ", str(BPC.validated)]))
+    cleanup_burrow_preference_config(getcwd())
 
-    SPC = SucrosePreferenceConfig()
-    print("".join(["MouseID: ", SPC.animal_id]))
-    print("".join(["Base Directory: ", SPC.base_path]))
-    print("".join(["Data Folder: ", SPC.data_path]))
-    print("".join(["Habituation Duration: ", str(SPC.habituation_duration)]))
-    print("".join(["Licks Per Trial: ", str(SPC.licks_per_trial)]))
-    print("".join(["Lick Volume: ", str(SPC.single_lick_volume)]))
-    print("".join(["Maximal Intake: ", str(SPC.max_liquid_intake)]))
-    print("".join(["Configuration Validated: ", str(SPC.validated)]))
-    print("".join(["Total Rewards Allowed: ", str(SPC.total_rewards_allowed)]))
+    LTC = LickTrainingConfig()
+    print("".join(["MouseID: ", LTC.animal_id]))
+    print("".join(["Base Directory: ", LTC.base_path]))
+    print("".join(["Data Folder: ", LTC.data_path]))
+    print("".join(["Habituation Duration: ", str(LTC.habituation_duration)]))
+    print("".join(["Licks Per Trial: ", str(LTC.licks_per_trial)]))
+    print("".join(["Lick Volume: ", str(LTC.single_lick_volume)]))
+    print("".join(["Maximal Intake: ", str(LTC.max_liquid_intake)]))
+    print("".join(["Configuration Validated: ", str(LTC.validated)]))
+    print("".join(["Total Rewards Allowed: ", str(LTC.total_rewards_allowed)]))
+    cleanup_lick_training_config(getcwd())

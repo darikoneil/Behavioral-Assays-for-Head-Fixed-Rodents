@@ -3,7 +3,7 @@ import numpy as np
 from ctypes import byref
 from PyDAQmx import *
 from GenericModules.DAQModules import DigitalGroupReader
-from LickBehaviorConfigurations import SucrosePreferenceConfig
+from LickBehaviorConfigurations import LickTrainingConfig
 from HardwareConfiguration import HardConfig
 from GenericModules.SaveModule import Saver, Pickler
 from GenericModules.BehavioralCamera_Slave import BehavCam
@@ -20,19 +20,19 @@ class DAQtoLickTraining(Task):
         _hardware_config = HardConfig()
 
         if args:
-            self.sucrose_preference_config = args[0]
+            self.lick_training_config = args[0]
         else:
-            self.sucrose_preference_config = SucrosePreferenceConfig()
+            self.lick_training_config = LickTrainingConfig()
 
         # User Parameters
         self.cameras_on = False
         self.print_period = 10
 
         # Training Parameters
-        self.animal_id = self.sucrose_preference_config.animal_id
-        self.single_lick_volume = self.sucrose_preference_config.single_lick_volume
-        self.total_rewards_allowed = self.sucrose_preference_config.total_rewards_allowed
-        self.trial_rewards_limit = self.sucrose_preference_config.licks_per_trial
+        self.animal_id = self.lick_training_config.animal_id
+        self.single_lick_volume = self.lick_training_config.single_lick_volume
+        self.total_rewards_allowed = self.lick_training_config.total_rewards_allowed
+        self.trial_rewards_limit = self.lick_training_config.licks_per_trial
 
         # Training Flags
         self.current_state = "Setup"
@@ -100,26 +100,33 @@ class DAQtoLickTraining(Task):
         self.bufferedAnalogDataToSave = np.array(self.DAQAnalogInBuffer.copy(), dtype=np.float64)
         self.bufferedDigitalDataToSave = np.full((_hardware_config.num_digital_in, self.buffer_size), 0, dtype=np.uint8)
         self.bufferedStateToSave = np.array(['0'], dtype=str)
+        self.bufferedCurrentSpout = np.array(['0'], dtype=str)
 
         # Grabbed Digital Buffer
         self.grabbedDigitalBuffer = self.bufferedDigitalDataToSave.copy()
         self.grabbedAnalogBuffer = self.DAQAnalogInBuffer.copy()
 
         self.save_module_analog = Saver()
-        self.save_module_analog.filename = self.sucrose_preference_config.data_path + "\\analog.npy"
+        self.save_module_analog.filename = self.lick_training_config.data_path + "\\analog.npy"
 
         self.save_module_digital = Saver()
-        self.save_module_digital.filename = self.sucrose_preference_config.data_path + "\\digital.npy"
+        self.save_module_digital.filename = self.lick_training_config.data_path + "\\digital.npy"
 
         self.save_module_state = Saver()
-        self.save_module_state.filename = self.sucrose_preference_config.data_path + "\\state.npy"
+        self.save_module_state.filename = self.lick_training_config.data_path + "\\state.npy"
+
+        self.save_module_spout = Pickler()
+        self.save_module_spout.filename = self.lick_training_config.data_path + "\\spout.npy"
 
         self.save_module_config = Pickler()
-        self.save_module_config.filename = self.sucrose_preference_config.data_path + "\\config"
+        self.save_module_config.filename = self.lick_training_config.data_path + "\\config"
+
+        self.save_module_stats = Pickler()
+        self.save_module_stats.filename = self.lick_training_config.data_path + "\\stats"
 
         if self.cameras_on:
             self.master_camera = BehavCam(0, 640, 480, "CAM")
-            self.master_camera.file_prefix = "".join([self.sucrose_preference_config.data_path, "\\", "_cam2_"])
+            self.master_camera.file_prefix = "".join([self.lick_training_config.data_path, "\\", "_cam2_"])
             self.master_camera.isRunning2 = True
             self.master_camera.start()
 
@@ -143,6 +150,8 @@ class DAQtoLickTraining(Task):
         self.bufferedAnalogDataToSave = np.append(self.bufferedAnalogDataToSave, self.grabbedAnalogBuffer, axis=1)
         self.bufferedStateToSave = np.append(self.bufferedStateToSave, self.current_state)
         self.bufferedDigitalDataToSave = np.append(self.bufferedDigitalDataToSave, self.grabbedDigitalBuffer, axis=1)
+        self.bufferedCurrentSpout = np.append(self.bufferedCurrentSpout, self.current_spout)
+
         if self.cameras_on:
             self.master_camera.currentTrial = self.current_trial
             self.master_camera.currentBuffer = self.totNumBuffers - 1
@@ -194,11 +203,8 @@ class DAQtoLickTraining(Task):
         self.rewards_monitor.StartTask()
 
     def clearDAQ(self):
-        self.rewards_monitor.StopTask()
         self.rewards_monitor.ClearTask()
-        self.permissions.StopTask()
         self.permissions.ClearTask()
-        self.StopTask()
         self.ClearTask()
 
     def stopDAQ(self):
@@ -214,6 +220,8 @@ class DAQtoLickTraining(Task):
         while self.unsaved:
             continue
         print("\nData Saved\n")
+        self.clearDAQ()
+        self.close()
 
     def start_training(self):
         self.current_state = str(self.current_trial)
@@ -268,7 +276,46 @@ class DAQtoLickTraining(Task):
             self.swap_permission()
 
     def save_data(self):
+        print("Saving Analog Data...")
+        self.save_module_analog.bufferedData = self.bufferedAnalogDataToSave.copy()
+        _ = self.save_module_analog.timeToSave()
+        print("Saving Digital Data...")
+        self.save_module_digital.bufferedData = self.bufferedDigitalDataToSave.copy()
+        _ = self.save_module_digital.timeToSave()
+        print("Saving State Data...")
+        self.save_module_state.bufferedData = self.bufferedStateToSave.copy()
+        _ = self.save_module_state.timeToSave()
+        print("Saving Spout Data...")
+        self.save_module_spout.bufferedData = self.bufferedCurrentSpout.copy()
+        _ = self.save_module_spout.timeToSave()
+        print("Saving Config Data...")
+        self.save_module_config.pickledPickles = self.lick_training_config
+        _ = self.save_module_config.timeToSave()
+        print("Saving Stats Data...")
+        self.save_module_stats.pickledPickles = self.createStatsDict()
+        _ = self.save_module_stats.timeToSave()
+
+        if self.cameras_on:
+            print("Saving Camera Data...")
+            self.master_camera.isRunning2 = False
+            self.master_camera.shutdown_mode = True
+            self.master_camera.save_data()
+            while self.master_camera.unsaved:
+                continue
+        self.unsaved = False
+        print("Finished Saving Data.")
         return
+
+    def createStatsDict(self):
+        StatsDict = {
+            "running_licks": self.running_licks,
+            "running_licks_water": self.running_licks_water,
+            "running_licks_sucrose": self.running_licks_sucrose,
+            "running_rewards": self.running_rewards,
+            "running_water_rewards": self.running_water_rewards,
+            "running_sucrose_rewards": self.running_sucrose_rewards,
+        }
+        return StatsDict
 
     @staticmethod
     def process_rewards(Data):

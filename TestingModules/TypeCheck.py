@@ -34,48 +34,49 @@ def test_burrow_preference_config(*args):
 
 def cleanup_burrow_preference_config(BasePath):
     from shutil import rmtree
-    _dir = "".join([BasePath, "\\", "Test_Mouse"])
+    _dir = "".join([BasePath, "\\Data\\", "Test_Mouse"])
     if path.exists(_dir):
         rmtree(_dir)
 
 
-def test_sucrose_preference_config(*args):
+def test_lick_training_config(*args):
     """
-    This function tests validity & integrity of the sucrose preference configuration
+    This function tests validity & integrity of the lick training configuration
 
-    :param args: To pass a specific burrow_config use the key sucrose_preference_config
+    :param args: To pass a specific burrow_config use the key lick_training_config
     :rtype: None
     """
 
     if args:
-        sucrose_preference_config = args[0]
+        lick_training_config = args[0]
     else:
-        from LickBehaviorConfigurations import SucrosePreferenceConfig
-        sucrose_preference_config = SucrosePreferenceConfig()
+        from LickBehaviorConfigurations import LickTrainingConfig
+        lick_training_config = LickTrainingConfig()
     
         # animal id
-    assert(isinstance(sucrose_preference_config.animal_id,  str))
+    assert(isinstance(lick_training_config.animal_id, str))
 
     # base path
-    assert(isinstance(sucrose_preference_config.base_path, str))
+    assert(isinstance(lick_training_config.base_path, str))
 
     # data path
-    assert(isinstance(sucrose_preference_config.data_path, str))
+    assert(isinstance(lick_training_config.data_path, str))
 
     # habituation duration
-    assert(isinstance(sucrose_preference_config.habituation_duration, int))
+    assert(isinstance(lick_training_config.habituation_duration, int))
 
     # single lick vol
-    assert(isinstance(sucrose_preference_config.single_lick_volume, int))
+    assert(isinstance(lick_training_config.single_lick_volume, float))
 
     # max lick vol
-    assert(isinstance(sucrose_preference_config.max_liquid_intake, int))
+    assert(isinstance(lick_training_config.max_liquid_intake, float))
 
     # licks per trial
-    assert(isinstance(sucrose_preference_config.licks_per_trial, int))
+    assert(isinstance(lick_training_config.licks_per_trial, int))
 
-def cleanup_sucrose_preference_config(BasePath):
+
+def cleanup_lick_training_config(BasePath):
     from shutil import rmtree
-    _dir = "".join([BasePath, "\\", "Test_Mouse"])
+    _dir = "".join([BasePath, "\\Data\\", "Test_Mouse"])
     if path.exists(_dir):
         rmtree(_dir)
