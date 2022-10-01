@@ -239,18 +239,21 @@ class DAQtoLickTraining(Task):
         self.current_state = str(self.current_trial)
         self.current_trial_rewards = 0
         self.current_spout = self.spout_index[self.current_trial]
-        if self.current_trial <= self.dual_starts:
-            self.open_permission()
-            if self.current_trial <= self.wet_starts:
-                self.wet_start_water()
-                self.wet_start_sucrose()
+
         if self.current_spout == "Water":
             self.turn_on_water()
-            if self.current_trial <= self.wet_starts:
+            if self.current_trial <= self.wet_starts-1: # because zero index
                 self.wet_start_water()
         elif self.current_spout == "Sucrose":
             self.turn_on_sucrose()
-            if self.current_trial <= self.wet_starts:
+            if self.current_trial <= self.wet_starts-1: # because zero index
+                self.wet_start_sucrose()
+
+        # Must be last to not be overwritten
+        if self.current_trial <= self.dual_starts-1: # because zero index
+            self.open_permission()
+            if self.current_trial <= self.wet_starts-1: # because zero index
+                self.wet_start_water()
                 self.wet_start_sucrose()
 
     def swap_permission(self):
@@ -290,20 +293,19 @@ class DAQtoLickTraining(Task):
 
     def initialize_permission(self):
         if self.current_spout == "Water":
-            self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
-            self.permissions.data[[self.permissions_water_channel_id, self.permissions_sucrose_channel_id]] = 1, 0
-            self.permissions.WriteDigitalLines(self.permissions.fill_mode, self.permissions.units,
-                                               self.permissions.timeout, DAQmx_Val_GroupByChannel,
-                                               self.permissions.data, None, None)
+            self.turn_on_water()
         elif self.current_spout == "Sucrose":
-            self.permissions.data = np.full(self.permissions.number_of_channels, 0, dtype=np.uint8)
-            self.permissions.data[[self.permissions_water_channel_id, self.permissions_sucrose_channel_id]] = 0, 1
-            self.permissions.WriteDigitalLines(self.permissions.fill_mode, self.permissions.units,
-                                               self.permissions.timeout, DAQmx_Val_GroupByChannel,
-                                               self.permissions.data, None, None)
+            self.turn_on_sucrose()
+
+        if self.current_trial <= self.dual_starts-1: # because zero index
+            self.open_permission()
+            if self.current_trial <= self.wet_starts-1: # because zero index
+                self.wet_start_water()
+                self.wet_start_sucrose()
 
     def check_if_finished(self):
-        if self.running_rewards >= self.total_rewards_allowed or self.current_trial > self.total_trials:
+        if self.running_rewards >= self.total_rewards_allowed or self.current_trial > self.total_trials-1:
+            # because zero index
             self.end_training()
         elif self.current_trial_rewards >= self.trial_rewards_limit:
             self.advance_trial()
