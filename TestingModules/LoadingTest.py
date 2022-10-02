@@ -3,8 +3,10 @@ import numpy as np
 import pickle as pkl
 
 
+# Burrow Preference (Deprecated)
 
-def test_data_loading():
+
+def test_data_burrow_preference_loading():
     _base_path = getcwd()
     _animal_id = "EM0086"
 

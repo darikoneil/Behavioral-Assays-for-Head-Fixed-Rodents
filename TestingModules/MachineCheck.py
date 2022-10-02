@@ -3,7 +3,7 @@ from testing_utility_functions import load_pickle_from_file
 from os import getcwd
 
 
-def test_run_machine():
+def test_run_burrow_preference_machine():
     """
     This function assess the integrity of the Burrow Preference Machine during execution
 
@@ -29,7 +29,7 @@ def test_run_machine():
     assert(int(BPT.pref_end-BPT.pref_start) == Config.behavior_duration)
 
 
-def test_machine_vars():
+def test_burrow_preference_machine_vars():
     """
     This function assess the integrity of the Config-Passed Burrow Preference Machine Variables
 

@@ -2,8 +2,10 @@ from BurrowPreferenceTask.RunBurrowPreference import DAQtoBurrow
 from testing_utility_functions import load_pickle_from_file
 from os import getcwd
 
+# Burrow Preference DAQ Tests
 
-def test_daq():
+
+def test_daq_burrow_preference():
     """
     This tests DAQ instantiation
 
@@ -13,7 +15,7 @@ def test_daq():
     DAQ = DAQtoBurrow(Config)
 
 
-def test_daq_acquisition():
+def test_daq_burrow_preference_acquisition():
     """
     This tests DAQ acquisition
 
@@ -24,7 +26,7 @@ def test_daq_acquisition():
     DAQ.startAcquisition()
 
 
-def test_daq_runtime():
+def test_daq_burrow_preference_runtime():
     """
     This tests daq runtime
 
