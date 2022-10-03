@@ -51,31 +51,33 @@ conda env create -f environment.yml
 
 5. Install [Servo Library](https://www.arduino.cc/reference/en/libraries/servo/)
 
-6. Confirm the hardware, wiring, and IO setup matches that described in HardwareConfiguration.py      
+6. Install [Circular Buffer Library](https://www.arduino.cc/reference/en/libraries/circularbuffer/)
 
-7. Upload C++ scripts to appropriate microcontrollers.    
-> The included [PyCharm](https://www.jetbrains.com/pycharm/) project meta does not add an external compiler or uploader. This functionality is can be added by editing the project configuration & entering arduino_debug.exe as an external tool. [See here for details.](https://samclane.dev/Pycharm-Arduino/). It is simply easier to upload the scripts to the respective devices in Arduino's IDE. [See here for details](https://support.arduino.cc/hc/en-us/articles/4733418441116-Upload-a-sketch-in-Arduino-IDE). Also note, the included [Pytest](https://docs.pytest.org/en/7.1.x/) checks do not assess the integrity of the microcontrollers.     
+7. Confirm the hardware, wiring, and IO setup matches that described in HardwareConfiguration.py      
 
-7. Enter the created anaconda environment     
+8. Upload C++ scripts to appropriate microcontrollers.    
+> The included [PyCharm](https://www.jetbrains.com/pycharm/) project meta does not add an external compiler or uploader. This functionality is can be added by editing the project configuration & entering arduino_debug.exe as an external tool. [See here for details.](https://samclane.dev/Pycharm-Arduino/) It is simply easier to upload the scripts to the respective devices in Arduino's IDE. [See here for details](https://support.arduino.cc/hc/en-us/articles/4733418441116-Upload-a-sketch-in-Arduino-IDE). Also note, the included [Pytest](https://docs.pytest.org/en/7.1.x/) checks do not assess the integrity of the microcontrollers.     
+
+9. Enter the created anaconda environment     
 
 ```
 conda activate LickingBehavior
 ```
 
-8. Assess the integrity of the installaton      
+10. Assess the integrity of the installation      
 
 ```
 pytest -q testing.py --show-progress
 ```
 
-9. If all tests pass, the installation is complete      
+11. If all tests pass, the installation is complete      
 
 ## Initiating Behavioral Tasks      
 
-All behavioral tasks are implemented as finite state machines which interface with one or more national instruments data acquisition boards. All data acquisition is syncronized to the analog input of a single DAQ. For ease of experimentation all behaviors can be controlled using graphical user interfaces.    
+All behavioral tasks are implemented as finite state machines which interface with one or more national instruments data acquisition boards. All data acquisition is synchronized to the analog input of a single DAQ. For ease of experimentation all behaviors can be controlled using graphical user interfaces.    
 
 1. Enter relevant behavioral parameters for the desired behavior in the LickBehaviorConfigurations.py file. 
-> Note that the attributes do not have setters and cannot be modified once initialized. This is for your own safety. I have not gotten to implementing a single-use setter function; change configuration directly in respective classes. Furthermore, mouse IDs must always be unique; the classes do not have the privelege to overwrite files. This is again for your own safety.
+> Note that the attributes do not have setters and cannot be modified once initialized. This is for your own safety. I have not gotten to implementing a single-use setter function; change configuration directly in respective classes. Furthermore, mouse IDs must always be unique; the classes do not have the privilege to overwrite files. This is again for your own safety.
 
 2. Execute the respective behavioral script in the terminal of your anaconda environment.
 
