@@ -135,7 +135,7 @@ class BurrowPreferenceTask(Thread):
 if __name__ == "__main__":
     from TestingModules.testing_utility_functions import load_pickle_from_file
     from os import getcwd
-    BPT = BurrowPreferenceTask(load_pickle_from_file("".join([getcwd(), "\\", "Test_Mouse.pkl"])))
+    BPT = BurrowPreferenceTask(load_pickle_from_file("".join([getcwd(), "\\TestingModules\\", "Test_Mouse_BPT.pkl"])))
     BPT.start_run = True
     BPT.proceed_sync = True
     BPT.saving_complete = True

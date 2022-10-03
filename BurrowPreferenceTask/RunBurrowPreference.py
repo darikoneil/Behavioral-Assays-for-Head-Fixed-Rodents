@@ -1,6 +1,6 @@
 from PyDAQmx import *
 
-from BurrowPreferenceMachine import BurrowPreferenceTask
+from BurrowPreferenceTask.BurrowPreferenceMachine import BurrowPreferenceTask
 from LickBehaviorConfigurations import BurrowPreferenceConfig
 from GenericModules.BehavioralCamera_Master import BehavCamMaster
 from HardwareConfiguration import HardConfig
@@ -241,7 +241,6 @@ class DAQtoBurrow(Task):
         self.attemptSucrose.StopTask()
         self.waterDriver.StopTask()
         self.sucroseDriver.StopTask()
-        self.lickSwapper.StopTask()
         self.gateTrigger.StopTask()
         self.gateOutDriver.StopTask()
         self.motorOut.StopTask()
@@ -261,8 +260,6 @@ class DAQtoBurrow(Task):
         self.waterDriver.ClearTask()
         self.sucroseDriver.StopTask()
         self.sucroseDriver.ClearTask()
-        self.lickSwapper.StopTask()
-        self.lickSwapper.ClearTask()
         self.gateTrigger.StopTask()
         self.gateTrigger.ClearTask()
         self.gateOutDriver.StopTask()
@@ -333,8 +330,6 @@ class DAQtoBurrow(Task):
         # Device 1 Digital Input
         self.gateTrigger.StartTask()
         # Device 3 Digital Output
-        self.lickSwapper.StartTask()
-        self.lickSwapper.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None)  # Write LOW
         self.sucroseDriver.StartTask()
         self.sucroseDriver.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None)  # Write LOW
         self.waterDriver.StartTask()

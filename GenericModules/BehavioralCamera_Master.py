@@ -3,7 +3,7 @@ import cv2 as cv
 from time import time
 from threading import Thread
 import imageio
-from BehavioralCamera_Slave import BehavCam
+from GenericModules.BehavioralCamera_Slave import BehavCam
 
 
 class BehavCamMaster:

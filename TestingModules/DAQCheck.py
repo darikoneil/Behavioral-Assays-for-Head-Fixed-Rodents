@@ -1,5 +1,5 @@
 from BurrowPreferenceTask.RunBurrowPreference import DAQtoBurrow
-from testing_utility_functions import load_pickle_from_file
+from TestingModules.testing_utility_functions import load_pickle_from_file
 from os import getcwd
 
 # Burrow Preference DAQ Tests
@@ -11,7 +11,7 @@ def test_daq_burrow_preference():
 
     :rtype: None
     """
-    Config = load_pickle_from_file("".join([getcwd(), "\\", "Test_Mouse.pkl"]))
+    Config = load_pickle_from_file("".join([getcwd(), "\\TestingModules\\", "Test_Mouse_BPT.pkl"]))
     DAQ = DAQtoBurrow(Config)
 
 
@@ -21,7 +21,7 @@ def test_daq_burrow_preference_acquisition():
 
     :rtype: None
     """
-    Config = load_pickle_from_file("".join([getcwd(), "\\", "Test_Mouse.pkl"]))
+    Config = load_pickle_from_file("".join([getcwd(), "\\TestingModules\\", "Test_Mouse_BPT.pkl"]))
     DAQ = DAQtoBurrow(Config)
     DAQ.startAcquisition()
 
@@ -32,7 +32,7 @@ def test_daq_burrow_preference_runtime():
 
     :rtype: None
     """
-    Config = load_pickle_from_file("".join([getcwd(), "\\", "Test_Mouse.pkl"]))
+    Config = load_pickle_from_file("".join([getcwd(), "\\TestingModules\\", "Test_Mouse_BPT.pkl"]))
     DAQ = DAQtoBurrow(Config)
     DAQ.startAcquisition()
     _not_started = True

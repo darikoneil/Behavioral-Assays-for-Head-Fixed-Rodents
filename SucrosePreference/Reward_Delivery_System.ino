@@ -1,4 +1,4 @@
-String Program = "Reward Delivery System";
+// String Program = "Reward Delivery System";
 
 // Behavioral Parameters
 const long cycling_time = 8000; // Approximate Solenoid Turnover Time
@@ -9,6 +9,7 @@ long reward_water_start = 0; // Time (micros-seconds) since water reward started
 long reward_sucrose_start = 0; // Time (micros-seconds) since sucrose reward started delivery
 long wet_start_reward_start = 0; // Time (micros-seconds) since wet start reward
 
+int flush = 0;
 
 // Digital Out Pins
 const int licked_water_pin = 31; // Signal to DAQ that water spout was licked
@@ -21,15 +22,9 @@ const int trigger_sucrose_pin = 13; // Trigger delivery of sucrose reward
 // Digital In Pins
 const int permission_water_pin = 53; // Permits water reward triggering upon licking
 const int permission_sucrose_pin = 51; // Permits sucrose reward triggering upon licking
-const int water_cap_touch_pin = 49; // water cap touch input
+const int water_cap_touch_pin = 8; // water cap touch input
 const int sucrose_cap_touch_pin = 47; // sucrose cap touch input
 const int wet_start_pin = 23; // wet start pin
-
-// Servo Pins I/O
-const int request_swap_pin = 11; // request lick spout swap
-const int request_remove_pin = 10; // request lick spout removal
-const int command_swap_pin = 9; // servo command lick spout swap
-const int command_remove_pin = 8;// servo command lick spout removal
 
 // booleans or pseudo-booleans
 int rewarding_sucrose = 0; // 0 is False, 1 is True
@@ -44,17 +39,6 @@ int rolling_water_licks = 0; // rolling tally per period
 const long reward_timeout_dur = 250000; // timeout reward (micros)
 long reward_water_timeout_start = 0; // timeout reward start time (water)
 long reward_sucrose_timeout_start = 0; // timeout reward start time (sucrose)
-
-// Setup Servos
-#include <Servo.h>
-Servo LickSwapper;
-Servo LickRemover;
-int swap_pos = 0; // current lick swapper position
-int remove_pos = 0; // current lick remover position
-long swapper_timeout_dur = 0; // timeout for servos in seconds
-long remover_timeout_dur = 5000000; // timeout for servos in seconds
-long swapper_timeout_start = 0; // timeout start
-long remover_timeout_start = 0; // timeout start
 
 // Circular Buffers (Commented Out, See Comment on Check Functions)
 #include <CircularBuffer.h>
@@ -74,13 +58,6 @@ void setup() {
     pinMode(water_cap_touch_pin, INPUT);
     pinMode(sucrose_cap_touch_pin, INPUT);
     pinMode(wet_start_pin, INPUT);
-    // Servo I/O
-    //pinMode(request_swap_pin, INPUT);
-    //pinMode(request_remove_pin, INPUT);
-    //pinMode(command_swap_pin, OUTPUT);
-    //pinMode(command_remove_pin, OUTPUT);
-    //LickSwapper.attach(command_swap_pin);
-    //LickRemover.attach(command_remove_pin);
 
 
     //SerialUSB.begin(38400);
@@ -95,6 +72,30 @@ void setup() {
 }
 
 void loop() {
+    //SerialUSB.println("LOOPING");
+    //SerialUSB.flush();
+    if (flush==1) {
+      //SerialUSB.println("Flushing Sucrose");
+      digitalWrite(trigger_sucrose_pin, HIGH);
+      digitalWrite(rewarded_sucrose_pin, HIGH);
+      delay(5000);
+      digitalWrite(trigger_sucrose_pin, LOW);
+      digitalWrite(rewarded_sucrose_pin, LOW);
+      flush = 2;
+      //SerialUSB.println("Flushed Sucrose");
+    }
+    if (flush==2) {
+      //SerialUSB.println("Flushing Water");
+      digitalWrite(trigger_water_pin, HIGH);
+      digitalWrite(rewarded_water_pin, HIGH);
+      delay(5000);
+      digitalWrite(trigger_water_pin, LOW);
+      digitalWrite(rewarded_water_pin, LOW);
+      flush = 0;
+      //SerialUSB.println("Flushed Water");
+    }
+
+
 
     if(rewarding_sucrose == 1){
         checkTerminateSucrose(); // Don't bother calling these unless delivering
@@ -115,13 +116,6 @@ void loop() {
            checkWater();
      }
 
-     if ((micros() - swapper_timeout_dur) > swapper_timeout_start) {
-           checkSpoutSwap();
-     }
-
-     if ((micros() - remover_timeout_dur) > remover_timeout_start) {
-          checkSpoutRemove();
-     }
 }
 
 void checkSucrose() {
@@ -137,8 +131,9 @@ void checkSucrose() {
             }
             if (rolling_sucrose_licks>signals_per_reward) {
                 digitalWrite(licked_sucrose_pin, HIGH);
+                //Serial.println("Sucrose Licked");
                 if (digitalRead(permission_sucrose_pin)==HIGH) {
-                  //SerialUSB.println("Sucrose Permitted & Licked");
+                  //SerialUSB.println("Sucrose Permitted");
                     deliverSucrose();
                 }
             }
@@ -161,8 +156,9 @@ void checkWater() {
               }
             if (rolling_water_licks>signals_per_reward) {
                 digitalWrite(licked_water_pin, HIGH);
+                //SerialUSB.println("Water Licked");
                 if (digitalRead(permission_water_pin)==HIGH) {
-                  //SerialUSB.println("Water Permitted & Licked");
+                  //SerialUSB.println("Water Permitted");
                    deliverWater();
                 }
             }
@@ -207,41 +203,8 @@ void checkTerminateWater(){
     }
 }
 
-void checkSpoutSwap() {
-    if (digitalRead(request_swap_pin)==HIGH) {
-            //SerialUSB.println("Spout Swapper");
-swapper_timeout_start = micros();
-            if (swap_pos == 0) {
-               LickSwapper.write(180);
-               swap_pos = 180;
-            }
-           else if (swap_pos == 180) {
-               LickSwapper.write(0);
-                swap_pos = 0;
-            }
-
-   }
-
-}
-
-void checkSpoutRemove() {
-    if (digitalRead(request_remove_pin)==HIGH) {
-        //SerialUSB.println("Spout Remover");
-        remover_timeout_start = micros();
-        if (remove_pos==0) {
-            LickRemover.write(180);
-            remove_pos = 180;
-        }
-        else if (remove_pos==180) {
-            LickRemover.write(0);
-            remove_pos = 0;
-       }
-
-    }
-}
-
 void checkWetStart() {
-    // SerialUSB.println("Checking Wet Start");
+     //SerialUSB.println("Checking Wet Start");
 
     if (wet_starting == 0 && digitalRead(wet_start_pin)==HIGH) {
       //SerialUSB.println("WET STARTING");

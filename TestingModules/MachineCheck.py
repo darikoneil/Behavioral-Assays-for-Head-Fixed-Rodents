@@ -1,5 +1,5 @@
 from BurrowPreferenceTask.BurrowPreferenceMachine import BurrowPreferenceTask
-from testing_utility_functions import load_pickle_from_file
+from TestingModules.testing_utility_functions import load_pickle_from_file
 from os import getcwd
 
 
@@ -9,7 +9,7 @@ def test_run_burrow_preference_machine():
 
     :rtype: None
     """
-    Config = load_pickle_from_file("".join([getcwd(), "\\", "Test_Mouse.pkl"]))
+    Config = load_pickle_from_file("".join([getcwd(), "\\TestingModules\\", "Test_Mouse_BPT.pkl"]))
     BPT = BurrowPreferenceTask(Config)
     BPT.start_run = True
     BPT.proceed_sync = True
@@ -35,7 +35,7 @@ def test_burrow_preference_machine_vars():
 
     :rtype: None
     """
-    Config = load_pickle_from_file("".join([getcwd(), "\\", "Test_Mouse.pkl"]))
+    Config = load_pickle_from_file("".join([getcwd(), "\\TestingModules\\", "Test_Mouse_BPT.pkl"]))
     BPT = BurrowPreferenceTask(Config)
     BPT.start_run = True
     BPT.proceed_sync = True

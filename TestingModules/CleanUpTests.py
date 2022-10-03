@@ -1,4 +1,4 @@
-from TypeCheck import cleanup_burrow_preference_config, cleanup_lick_training_config
+from TestingModules.TypeCheck import cleanup_burrow_preference_config, cleanup_lick_training_config
 
 
 def pre_clean_test(BasePath):
