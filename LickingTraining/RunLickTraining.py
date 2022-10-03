@@ -35,8 +35,8 @@ class DAQtoLickTraining(Task):
         self.trial_rewards_limit = self.lick_training_config.rewards_per_trial
         self.total_trials = self.lick_training_config.num_trials
         self.spout_index = self.lick_training_config.spout_index
-        self.wet_starts = self.lick_training_config.wet_starts
-        self.dual_starts = self.lick_training_config.dual_starts
+        self.num_wet_starts = self.lick_training_config.wet_starts
+        self.num_dual_starts = self.lick_training_config.dual_starts
 
         # Training Flags
         self.current_state = "Setup"
@@ -79,7 +79,17 @@ class DAQtoLickTraining(Task):
         # Callback every buffer_size over time = buffer_size*sampling_rate
         self.AutoRegisterDoneEvent(0, name='DoneCallback')  # Flag Callback Executed
 
-        # Setup DAQ - Digital Output
+        # Setup DAQ - Digital Output Port 0
+        self.sync = Task()
+        self.sync.number_of_channels = _hardware_config.num_digital_out_port_0
+        self.sync.fill_mode = np.bool_(1)
+        self.sync.units = np.int32(1)
+        self.sync.timeout = self.timeout
+        self.data = np.full(self.sync.number_of_channels, 0, dtype=np.uint8)
+        self.sync.CreateDOChan(_hardware_config.digital_chans_out_port_0, "Sync", DAQmx_Val_ChanForAllLines)
+        self.sync.trial_channel_id = _hardware_config.trial_channel_id
+
+        # Setup DAQ - Digital Output Port 1
         self.permissions = Task()
         self.permissions.number_of_channels = _hardware_config.num_digital_out_port_1
         self.permissions.fill_mode = np.bool_(1)
@@ -89,6 +99,16 @@ class DAQtoLickTraining(Task):
         self.permissions.CreateDOChan(_hardware_config.digital_chans_out_port_1, "Permissions", DAQmx_Val_ChanForAllLines)
         self.permissions_sucrose_channel_id = _hardware_config.permission_sucrose_channel_id
         self.permissions_water_channel_id = _hardware_config.permission_water_channel_id
+
+        # Setup DAQ  - Digital Output Port 2
+        self.wet_starter = Task()
+        self.wet_starter.number_of_channels = _hardware_config.num_digital_out_port_2
+        self.wet_starter.fill_mode = np.bool_(1)
+        self.wet_starter.units = np.int32(1)
+        self.wet_starter.timeout = self.timeout
+        self.wet_starter.data = np.full(self.wet_starter.number_of_channels, 0, dtype=np.uint8)
+        self.wet_starter.CreateDOChan(_hardware_config.digital_chans_out_port_2, "Wet Starter",
+                                      DAQmx_Val_ChanForAllLines)
 
         # Setup DAQ - Digital Input
         self.rewards_monitor = Task()
@@ -203,23 +223,30 @@ class DAQtoLickTraining(Task):
         # Analog Inputs
         self.StartTask() # (Master Clock!!!)
         # Digital Output
-        self.permissions.StartTask()
+        self.permissions.StartTask() # Port 1
+        self.wet_starter.StartTask() # Port 2
+
         # Digital Input
         self.rewards_monitor.StartTask()
 
     def clearDAQ(self):
         self.rewards_monitor.ClearTask()
         self.permissions.ClearTask()
+        self.wet_starter.ClearTask()
         self.ClearTask()
 
     def stopDAQ(self):
         self.rewards_monitor.StopTask()
         self.permissions.StopTask()
+        self.wet_starter.StopTask()
         self.StopTask()
 
     def end_training(self):
+        self.wet_stop()
+        self.restrict_permission()
         self.current_state = "End"
         print("\n Training Complete!\n")
+        self.stop_trial_sync()
         self.stopDAQ()
         self.save_data()
         while self.unsaved:
@@ -231,9 +258,11 @@ class DAQtoLickTraining(Task):
     def start_training(self):
         self.current_state = str(self.current_trial)
         self.training_started = True
+        self.start_trial_sync()
         self.initialize_permission()
 
     def advance_trial(self):
+        self.wet_stop()
         self.restrict_permission()
         self.current_trial += 1
         self.current_state = str(self.current_trial)
@@ -242,19 +271,18 @@ class DAQtoLickTraining(Task):
 
         if self.current_spout == "Water":
             self.turn_on_water()
-            if self.current_trial <= self.wet_starts-1: # because zero index
-                self.wet_start_water()
+            if self.current_trial <= self.num_wet_starts-1: # because zero index
+                self.wet_start()
         elif self.current_spout == "Sucrose":
             self.turn_on_sucrose()
-            if self.current_trial <= self.wet_starts-1: # because zero index
-                self.wet_start_sucrose()
+            if self.current_trial <= self.num_wet_starts-1: # because zero index
+                self.wet_start()
 
         # Must be last to not be overwritten
-        if self.current_trial <= self.dual_starts-1: # because zero index
+        if self.current_trial <= self.num_dual_starts-1: # because zero index
             self.open_permission()
-            if self.current_trial <= self.wet_starts-1: # because zero index
-                self.wet_start_water()
-                self.wet_start_sucrose()
+            if self.current_trial <= self.num_wet_starts-1: # because zero index
+                self.wet_start()
 
     def swap_permission(self):
         if self.current_spout == "Water":
@@ -297,11 +325,10 @@ class DAQtoLickTraining(Task):
         elif self.current_spout == "Sucrose":
             self.turn_on_sucrose()
 
-        if self.current_trial <= self.dual_starts-1: # because zero index
+        if self.current_trial <= self.num_dual_starts-1: # because zero index
             self.open_permission()
-            if self.current_trial <= self.wet_starts-1: # because zero index
-                self.wet_start_water()
-                self.wet_start_sucrose()
+            if self.current_trial <= self.num_wet_starts-1: # because zero index
+                self.wet_start()
 
     def check_if_finished(self):
         if self.running_rewards >= self.total_rewards_allowed or self.current_trial > self.total_trials-1:
@@ -351,6 +378,32 @@ class DAQtoLickTraining(Task):
             "running_sucrose_rewards": self.running_sucrose_rewards,
         }
         return StatsDict
+
+    def wet_start(self):
+        self.wet_starter.data = np.full(self.wet_starter.number_of_channels, 1, dtype=np.uint8)
+        self.wet_starter.WriteDigitalLines(self.wet_starter.fill_mode, self.wet_starter.units,
+                                           self.wet_starter.timeout, DAQmx_Val_GroupByChannel,
+                                           self.wet_starter.data, None, None)
+
+    def wet_stop(self):
+        self.wet_starter.data = np.full(self.wet_starter.number_of_channels, 0, dtype=np.uint8)
+        self.wet_starter.WriteDigitalLines(self.wet_starter.fill_mode, self.wet_starter.units,
+                                           self.wet_starter.timeout, DAQmx_Val_GroupByChannel,
+                                           self.wet_starter.data, None, None)
+
+    def start_trial_sync(self):
+        self.sync.data = np.full(self.sync.number_of_channels, 0, dtype=np.uint8)
+        self.sync.data[self.sync.trial_channel_id] = 1
+        self.sync.WriteDigitalLines(self.sync.fill_mode, self.sync.units,
+                                    self.sync.timeout, DAQmx_Val_GroupByChannel,
+                                    self.sync.data, None, None)
+
+    def stop_trial_sync(self):
+        self.sync.data = np.full(self.sync.number_of_channels, 0, dtype=np.uint8)
+        self.sync.data[self.sync.trial_channel_id] = 0
+        self.sync.WriteDigitalLines(self.sync.fill_mode, self.sync.units,
+                                    self.sync.timeout, DAQmx_Val_GroupByChannel,
+                                    self.sync.data, None, None)
 
     @staticmethod
     def process_rewards(Data):
