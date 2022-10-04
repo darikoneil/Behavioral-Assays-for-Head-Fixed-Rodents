@@ -25,7 +25,7 @@ class DAQtoLickTraining(Task):
             self.lick_training_config = LickTrainingConfig()
 
         # User Parameters
-        self.cameras_on = False
+        self.cameras_on = True
         self.print_period = 10
 
         # Training Parameters
@@ -44,6 +44,7 @@ class DAQtoLickTraining(Task):
         self.current_trial_rewards = 0
         self.current_spout = "Water" # or Sucrose
         self.training_started = False
+        self.training_complete = False
         self.unsaved = True
         self.hold = False
 
@@ -208,6 +209,7 @@ class DAQtoLickTraining(Task):
             print("\n ----------------------------------")
             print("".join(["\nRunning Intake: ", str(self.running_rewards), " rewards delivered", " and ", str(self.running_rewards * self.single_lick_volume), " uL consumed"]))
             print("".join(["\nRunning Licks: ", str(self.running_licks)]))
+            print("".join(["\nCurrent Spout: ", self.current_spout]))
             print("".join(["\nCurrent Trial: ", str(self.current_trial)]))
             print("".join(["\nRunning Trial Intake: ", str(self.current_trial_rewards)]))
             print("\n ----------------------------------")
@@ -253,11 +255,12 @@ class DAQtoLickTraining(Task):
             continue
         print("\nData Saved\n")
         self.clearDAQ()
-        self.close()
+        self.training_complete = True
 
     def start_training(self):
         self.current_state = str(self.current_trial)
         self.training_started = True
+        self.master_camera.is_recording_time = True
         self.start_trial_sync()
         self.initialize_permission()
 
@@ -337,6 +340,13 @@ class DAQtoLickTraining(Task):
         elif self.current_trial_rewards >= self.trial_rewards_limit:
             self.advance_trial()
 
+    def graceful_abort(self):
+        self.training_started = False
+        self.stopDAQ()
+        self.save_data()
+        self.clearDAQ()
+        self.close()
+
     def save_data(self):
         print("Saving Analog Data...")
         self.save_module_analog.bufferedData = self.bufferedAnalogDataToSave.copy()
@@ -393,14 +403,14 @@ class DAQtoLickTraining(Task):
 
     def start_trial_sync(self):
         self.sync.data = np.full(self.sync.number_of_channels, 0, dtype=np.uint8)
-        self.sync.data[self.sync.trial_channel_id] = 1
+        self.sync.data[2] = 1
         self.sync.WriteDigitalLines(self.sync.fill_mode, self.sync.units,
                                     self.sync.timeout, DAQmx_Val_GroupByChannel,
                                     self.sync.data, None, None)
 
     def stop_trial_sync(self):
         self.sync.data = np.full(self.sync.number_of_channels, 0, dtype=np.uint8)
-        self.sync.data[self.sync.trial_channel_id] = 0
+        self.sync.data[2] = 0
         self.sync.WriteDigitalLines(self.sync.fill_mode, self.sync.units,
                                     self.sync.timeout, DAQmx_Val_GroupByChannel,
                                     self.sync.data, None, None)

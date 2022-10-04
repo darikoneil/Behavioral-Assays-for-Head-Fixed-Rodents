@@ -123,7 +123,7 @@ class LickTrainingConfig:
         self.validated = False
 
         # General Parameters (Protected with no single setters)
-        self._animal_id = "Test_Mouse"
+        self._animal_id = "EM0084"
         self._base_path = getcwd() # or manually enter a filepath
         self._data_path = "".join([self.base_path, "\\Data\\", self.animal_id])
 

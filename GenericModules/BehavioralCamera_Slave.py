@@ -105,7 +105,7 @@ class BehavCam(Thread):
 if __name__ == '__main__':
     from time import time
     _start_1 = time()
-    behavCam = BehavCam(1, 640, 480, "DARIK")
+    behavCam = BehavCam(0, 640, 480, "DARIK")
     behavCam.isRunning2 = True
     behavCam.is_recording_time = True
     behavCam.start()

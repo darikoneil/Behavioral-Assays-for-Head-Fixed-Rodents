@@ -17,11 +17,11 @@ from TestingModules.DAQCheck import test_daq_burrow_preference, test_daq_burrow_
 
 # Lick Training
 from TestingModules.TypeCheck import test_lick_training_config
-
+from TestingModules.DAQCheck import test_daq_lick, test_daq_lick_acquisition, test_daq_lick_runtime
 
 
 # Delete existing test directory if exists
-pre_clean_test("".join([getcwd(), "//Testing//Data"]))
+pre_clean_test("".join([getcwd(), "//TestingModules//Data"]))
 
 # Burrow Preference
 test_burrow_preference_config(load_pickle_from_file("".join([getcwd(), "\\TestingModules\\", "Test_Mouse_BPT.pkl"])))
@@ -39,6 +39,11 @@ test_daq_burrow_preference_runtime()
 # Licking Training
 test_lick_training_config(load_pickle_from_file("".join([getcwd(), "\\TestingModules\\", "Test_Mouse_LTC.pkl"])))
 
+test_daq_lick()
+
+test_daq_lick_acquisition()
+
+test_daq_lick_runtime()
 
 # Clean up? which doesn't work hence above
-clean_up_test("".join([getcwd(), "//Testing//Data"]))
+clean_up_test("".join([getcwd(), "//TestingModules//Data"]))

@@ -235,12 +235,12 @@ class DAQtoBurrow(Task):
         return 0
 
     def stopDAQ(self):
-        self.lickedWater.StopTask()
-        self.lickedSucrose.StopTask()
-        self.attemptWater.StopTask()
-        self.attemptSucrose.StopTask()
-        self.waterDriver.StopTask()
-        self.sucroseDriver.StopTask()
+        #self.lickedWater.StopTask()
+        #self.lickedSucrose.StopTask()
+        #self.attemptWater.StopTask()
+        #self.attemptSucrose.StopTask()
+        #self.waterDriver.StopTask()
+        #self.sucroseDriver.StopTask()
         self.gateTrigger.StopTask()
         self.gateOutDriver.StopTask()
         self.motorOut.StopTask()
@@ -248,18 +248,18 @@ class DAQtoBurrow(Task):
         self.StopTask()
 
     def clearDAQ(self):
-        self.lickedWater.StopTask()
-        self.lickedWater.ClearTask()
-        self.lickedSucrose.StopTask()
-        self.lickedSucrose.ClearTask()
-        self.attemptWater.StopTask()
-        self.attemptWater.ClearTask()
-        self.attemptSucrose.StopTask()
-        self.attemptSucrose.ClearTask()
-        self.waterDriver.StopTask()
-        self.waterDriver.ClearTask()
-        self.sucroseDriver.StopTask()
-        self.sucroseDriver.ClearTask()
+        #self.lickedWater.StopTask()
+        #self.lickedWater.ClearTask()
+        #self.lickedSucrose.StopTask()
+        #self.lickedSucrose.ClearTask()
+        #self.attemptWater.StopTask()
+        #self.attemptWater.ClearTask()
+       # self.attemptSucrose.StopTask()
+        ##self.attemptSucrose.ClearTask()
+        #self.waterDriver.StopTask()
+        #self.waterDriver.ClearTask()
+        #self.sucroseDriver.StopTask()
+        #self.sucroseDriver.ClearTask()
         self.gateTrigger.StopTask()
         self.gateTrigger.ClearTask()
         self.gateOutDriver.StopTask()
@@ -330,15 +330,15 @@ class DAQtoBurrow(Task):
         # Device 1 Digital Input
         self.gateTrigger.StartTask()
         # Device 3 Digital Output
-        self.sucroseDriver.StartTask()
-        self.sucroseDriver.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None)  # Write LOW
-        self.waterDriver.StartTask()
-        self.waterDriver.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None)  # Write LOW
+        #self.sucroseDriver.StartTask()
+        #self.sucroseDriver.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None)  # Write LOW
+        #self.waterDriver.StartTask()
+        #self.waterDriver.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None)  # Write LOW
         # Device 3 Digital Input
-        self.attemptSucrose.StartTask()
-        self.attemptWater.StartTask()
-        self.lickedSucrose.StartTask()
-        self.lickedWater.StartTask()
+        #self.attemptSucrose.StartTask()
+        #self.attemptWater.StartTask()
+        #self.lickedSucrose.StartTask()
+        #self.lickedWater.StartTask()
         self.trialFlagger.WriteDigitalScalarU32(np.bool_(1), np.float64(1), np.uint32(0), None)  # Write LOW
 
     def startBehavior(self):
