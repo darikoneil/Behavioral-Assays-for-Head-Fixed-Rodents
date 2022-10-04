@@ -27,7 +27,13 @@ Anhedonia assessment comparing the consumption of sugar-water & water
 Cognitive assay assessing reward learning     
 
 **_Reversal Test_**     
-Cognitive assay assessing behavioral flexibility      
+Cognitive assay assessing behavioral flexibility
+
+**_Trace Fear Conditioning_**       
+Memory assay        
+
+**_Instrumental Fear Conditioning_**        
+Memory assay        
 
 ## Installation     
 0. Clone this repository  
@@ -56,7 +62,7 @@ conda env create -f environment.yml
 7. Confirm the hardware, wiring, and IO setup matches that described in HardwareConfiguration.py      
 
 8. Upload C++ scripts to appropriate microcontrollers.    
-> The included [PyCharm](https://www.jetbrains.com/pycharm/) project meta does not add an external compiler or uploader. This functionality is can be added by editing the project configuration & entering arduino_debug.exe as an external tool. [See here for details.](https://samclane.dev/Pycharm-Arduino/) It is simply easier to upload the scripts to the respective devices in Arduino's IDE. [See here for details](https://support.arduino.cc/hc/en-us/articles/4733418441116-Upload-a-sketch-in-Arduino-IDE). Also note, the included [Pytest](https://docs.pytest.org/en/7.1.x/) checks do not assess the integrity of the microcontrollers.     
+> The included [PyCharm](https://www.jetbrains.com/pycharm/) project meta does not add an external compiler or uploader. This functionality is can be added by editing the project configuration & entering arduino_debug.exe as an external tool. [See here for details.](https://samclane.dev/Pycharm-Arduino/) It is simply easier to upload the scripts to the respective devices in Arduino's IDE. [See here for details](https://support.arduino.cc/hc/en-us/articles/4733418441116-Upload-a-sketch-in-Arduino-IDE). Also note, the included [Pytest](https://docs.pytest.org/en/7.1.x/) checks do not assess the integrity of the microcontrollers. To do so, simply connect the microcontroller to the PC serially and invoke conditional compilation of verbose feedback (e.g., #define CheckSignalInputsSucrose)   
 
 9. Enter the created anaconda environment     
 
