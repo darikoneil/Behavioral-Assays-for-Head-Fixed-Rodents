@@ -1,4 +1,15 @@
-// String Program = "Reward Delivery System";
+String program_name = "Reward Delivery System";
+
+// Use Serials
+#define UseSerial
+
+// Input Checking
+#define SucroseCheckSignalInputs
+#define WaterCheckSignalInputs
+#define WetStartCheckSignalInputs
+
+// Event Feedback
+#define EventFeedback
 
 // Behavioral Parameters
 const long cycling_time = 8000; // Approximate Solenoid Turnover Time
@@ -9,7 +20,7 @@ long reward_water_start = 0; // Time (micros-seconds) since water reward started
 long reward_sucrose_start = 0; // Time (micros-seconds) since sucrose reward started delivery
 long wet_start_reward_start = 0; // Time (micros-seconds) since wet start reward
 
-int flush = 0;
+int flush = 2; // Proceeds 0 -> 1 -> 2
 
 // Digital Out Pins
 const int licked_water_pin = 31; // Signal to DAQ that water spout was licked
@@ -59,43 +70,68 @@ void setup() {
     pinMode(sucrose_cap_touch_pin, INPUT);
     pinMode(wet_start_pin, INPUT);
 
-
-    //SerialUSB.begin(38400);
-    //while (!SerialUSB);
-    //{
-    //  ;
-    //}
-    //SerialUSB.flush();
-    //SerialUSB.println(Program);
-    //SerialUSB.flush();
-    //SerialUSB.println("Hello World");
+   #ifdef UseSerial
+    SerialUSB.begin(9600);
+    while (!SerialUSB);
+    {
+      ;
+    }
+    SerialUSB.flush();
+    SerialUSB.println(program_name);
+    SerialUSB.flush();
+   #endif
 }
 
 void loop() {
-    //SerialUSB.println("LOOPING");
-    //SerialUSB.flush();
-    if (flush==1) {
-      //SerialUSB.println("Flushing Sucrose");
+
+    #ifdef CheckSignalInputsSucrose
+      SerialUSB.print("Sucrose Licked: ");
+      SerialUSB.println(digitalRead(sucrose_cap_touch_pin));
+      SerialUSB.flush();
+      SerialUSB.print("Sucrose Permitted: ");
+      SerialUSB.println(digitalRead(permission_sucrose_pin));
+      SerialUSB.flush();
+    #endif
+
+    #ifdef CheckSignalInputsWater
+      SerialUSB.print("Water Licked: ");
+      SerialUSB.println(digitalRead(water_cap_touch_pin));
+      SerialUSB.flush();
+      SerialUSB.print("Water Permitted: ");
+      SerialUSB.println(digitalRead(permission_water_pin));
+      SerialUSB.flush();
+    #endif
+
+    #ifdef CheckSignalInputsWetStart
+      SerialUSB.print("Wet Start: ");
+      SerialUSB.println(digitalRead(wet_start_pin));
+      SerialUSB.flush();
+    #endif
+
+    if (flush==0) {
       digitalWrite(trigger_sucrose_pin, HIGH);
       digitalWrite(rewarded_sucrose_pin, HIGH);
       delay(5000);
       digitalWrite(trigger_sucrose_pin, LOW);
       digitalWrite(rewarded_sucrose_pin, LOW);
-      flush = 2;
-      //SerialUSB.println("Flushed Sucrose");
+      flush = 1;
+      #ifdef EventFeedback
+        SerialUSB.println("Flushed Sucrose");
+        SerialUSB.flush();
+      #endif
     }
-    if (flush==2) {
-      //SerialUSB.println("Flushing Water");
+    if (flush==1) {
       digitalWrite(trigger_water_pin, HIGH);
       digitalWrite(rewarded_water_pin, HIGH);
       delay(5000);
       digitalWrite(trigger_water_pin, LOW);
       digitalWrite(rewarded_water_pin, LOW);
-      flush = 0;
-      //SerialUSB.println("Flushed Water");
+      flush = 2;
+      #ifdef EventFeedback
+        SerialUSB.println("Flushed Water");
+        SerialUSB.flush();
+      #endif
     }
-
-
 
     if(rewarding_sucrose == 1){
         checkTerminateSucrose(); // Don't bother calling these unless delivering
@@ -104,15 +140,15 @@ void loop() {
     if(rewarding_water == 1){
         checkTerminateWater(); // Don't bother calling these unless delivering
     }
-     if ((micros()- wet_start_timeout_dur) > wet_start_reward_start) {
+     if ((micros()- wet_start_timeout_dur) > wet_start_reward_start) { // Don't bother calling these unless past timeout
            checkWetStart();
      }
 
-     if ((micros() - reward_timeout_dur) > reward_sucrose_timeout_start) {
+     if ((micros() - reward_timeout_dur) > reward_sucrose_timeout_start) { // Don't bother calling these unless past timeout
            checkSucrose();
      }
 
-     if ((micros() - reward_timeout_dur) > reward_water_timeout_start) {
+     if ((micros() - reward_timeout_dur) > reward_water_timeout_start) { // Don't bother calling these unless past timeout
            checkWater();
      }
 
@@ -129,13 +165,20 @@ void checkSucrose() {
             for(int i=0; i <sucrose_buffer.size(); i++) {
               rolling_sucrose_licks += sucrose_buffer[i];
             }
-            if (rolling_sucrose_licks>signals_per_reward) {
+            if ((rolling_sucrose_licks>signals_per_reward) && (digitalRead(permission_sucrose_pin)==HIGH)) {
                 digitalWrite(licked_sucrose_pin, HIGH);
-                //Serial.println("Sucrose Licked");
-                if (digitalRead(permission_sucrose_pin)==HIGH) {
-                  //SerialUSB.println("Sucrose Permitted");
-                    deliverSucrose();
+                deliverSucrose();
+                #ifdef EventFeedback
+                  SerialUSB.println("Licked Sucrose & Reward Permitted");
+                  SerialUSB.flush();
+                #endif
                 }
+            else if ((rolling_sucrose_licks>signals_per_reward) && (digitalRead(permission_sucrose_pin)==LOW)) {
+              digitalWrite(licked_sucrose_pin, HIGH);
+              #ifdef EventFeedback
+                SerialUSB.println("Licked Sucrose & Not Permitted");
+                SerialUSB.flush();
+              #endif
             }
             else {
               digitalWrite(licked_sucrose_pin, LOW);
@@ -154,37 +197,49 @@ void checkWater() {
               for(int i=0; i <water_buffer.size(); i++) {
                 rolling_water_licks += water_buffer[i];
               }
-            if (rolling_water_licks>signals_per_reward) {
+            if ((rolling_water_licks>signals_per_reward) && (digitalRead(permission_water_pin)==HIGH)) {
                 digitalWrite(licked_water_pin, HIGH);
-                //SerialUSB.println("Water Licked");
-                if (digitalRead(permission_water_pin)==HIGH) {
-                  //SerialUSB.println("Water Permitted");
-                   deliverWater();
-                }
+                deliverWater();
+                #ifdef EventFeedback
+                  SerialUSB.println("Licked Water & Permitted Reward");
+                  SerialUSB.flush();
+                #endif
+            }
+            else if ((rolling_water_licks>signals_per_reward) && (digitalRead(permission_water_pin)==LOW)) {
+              digitalWrite(licked_water_pin, HIGH);
+                #ifdef EventFeedback
+                  SerialUSB.println("Licked Water & Not Permitted");
+                  SerialUSB.flush();
+                #endif
             }
            else {
             digitalWrite(licked_water_pin, LOW);
            }
         }
-
 }
 
 void deliverSucrose(){
-    //SerialUSB.println("REWARDING SUCROSE - NC");
     reward_sucrose_start = micros();
     reward_sucrose_timeout_start = reward_sucrose_start;
     digitalWrite(trigger_sucrose_pin, HIGH);
     digitalWrite(rewarded_sucrose_pin, HIGH);
     rewarding_sucrose = 1;
+    #ifdef EventFeedback
+      SerialUSB.println("Delivered Sucrose");
+      SerialUSB.flush();
+    #endif
 }
 
 void deliverWater(){
-      //SerialUSB.println("REWARDING WATER -NC");
        reward_water_start = micros();
        reward_water_timeout_start = reward_water_start;
        digitalWrite(trigger_water_pin, HIGH);
        digitalWrite(rewarded_water_pin, HIGH);
        rewarding_water = 1;
+       #ifdef EventFeedback
+          SerialUSB.println("Delivered Water");
+          SerialUSB.flush();
+       #endif
 }
 
 void checkTerminateSucrose(){
@@ -192,6 +247,10 @@ void checkTerminateSucrose(){
         digitalWrite(trigger_sucrose_pin, LOW);
         digitalWrite(rewarded_sucrose_pin, LOW);
         rewarding_sucrose = 0;
+        #ifdef EventFeedback
+          SerialUSB.println("Terminate Sucrose");
+          SerialUSB.flush();
+        #endif
     }
 }
 
@@ -200,28 +259,35 @@ void checkTerminateWater(){
         digitalWrite(trigger_water_pin, LOW);
         digitalWrite(rewarded_water_pin, LOW);
         rewarding_water = 0;
+        #ifdef EventFeedback
+          SerialUSB.println("Terminate Sucrose");
+          SerialUSB.flush();
+        #endif
     }
 }
 
 void checkWetStart() {
-     //SerialUSB.println("Checking Wet Start");
-
     if (wet_starting == 0 && digitalRead(wet_start_pin)==HIGH) {
-      //SerialUSB.println("WET STARTING");
+      #ifdef EventFeedback
+        SerialUSB.println("Wet Starting...");
+        SerialUSB.flush();
+      #endif
       wet_starting = 1;
       wet_start_reward_start = micros();
 
-      if (rewarding_water == 0){
-          if (digitalRead(wet_start_pin)==HIGH && digitalRead(permission_water_pin)==HIGH) {
-              //SerialUSB.println("Wet Start Water");
+      if ((rewarding_water == 0) && (digitalRead(wet_start_pin)==HIGH) && (digitalRead(permission_water_pin)==HIGH)) {
               deliverWater();
-          }
+              #ifdef EventFeedback
+                  SerialUSB.println("Water Primed");
+                  SerialUSB.flush();
+              #endif
       }
-      if (rewarding_sucrose == 0) {
-          if (digitalRead(wet_start_pin)==HIGH && digitalRead(permission_sucrose_pin)==HIGH) {
-              //SerialUSB.println("Wet Start Sucrose");
+      if ((rewarding_sucrose == 0) && (digitalRead(wet_start_pin)==HIGH) && (digitalRead(permission_sucrose_pin)==HIGH)) {
               deliverSucrose();
-          }
+               #ifdef EventFeedback
+                  SerialUSB.println("Sucrose Primed");
+                  SerialUSB.flush();
+               #endif
       }
   }
 }
