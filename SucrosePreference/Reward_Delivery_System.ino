@@ -11,6 +11,16 @@ String program_name = "Reward Delivery System";
 // Event Feedback
 #define EventFeedback
 
+// Performance Checks
+#define CheckTimingFull
+#ifdef  CheckTimingFull
+long time1 = 0;
+long time2 = 0;
+#endif
+
+#define CheckTimingBufferSize
+
+
 // Behavioral Parameters
 const long cycling_time = 8000; // Approximate Solenoid Turnover Time
 const long reward_dur_water = 12125 + cycling_time; // Calibrated Duration to leave water solenoid open
@@ -20,7 +30,9 @@ long reward_water_start = 0; // Time (micros-seconds) since water reward started
 long reward_sucrose_start = 0; // Time (micros-seconds) since sucrose reward started delivery
 long wet_start_reward_start = 0; // Time (micros-seconds) since wet start reward
 
-int flush = 2; // Proceeds 0 -> 1 -> 2
+#ifdef Flush
+int flush = 0; // Proceeds 0 -> 1 -> 2
+#endif
 
 // Digital Out Pins
 const int licked_water_pin = 31; // Signal to DAQ that water spout was licked
@@ -84,6 +96,10 @@ void setup() {
 
 void loop() {
 
+    #ifdef CheckTimingFull
+    time1 = micros();
+    #endif
+
     #ifdef CheckSignalInputsSucrose
       SerialUSB.print("Sucrose Licked: ");
       SerialUSB.println(digitalRead(sucrose_cap_touch_pin));
@@ -108,6 +124,7 @@ void loop() {
       SerialUSB.flush();
     #endif
 
+    #ifdef Flush
     if (flush==0) {
       digitalWrite(trigger_sucrose_pin, HIGH);
       digitalWrite(rewarded_sucrose_pin, HIGH);
@@ -132,7 +149,7 @@ void loop() {
         SerialUSB.flush();
       #endif
     }
-
+    #endif
     if(rewarding_sucrose == 1){
         checkTerminateSucrose(); // Don't bother calling these unless delivering
     }
@@ -152,6 +169,19 @@ void loop() {
            checkWater();
      }
 
+    #ifdef CheckTimingFull
+    time2 = micros()-time1;
+    SerialUSB.print("Loop Time: ");
+    SerialUSB.print(time2);
+    SerialUSB.println(" microseconds");
+    SerialUSB.flush();
+    #endif
+
+    #ifdef CheckTimingBufferSize
+    SerialUSB.print("Buffer Size: ");
+    SerialUSB.print(5*time2);
+    SerialUSB.flush();
+    #endif
 }
 
 void checkSucrose() {
