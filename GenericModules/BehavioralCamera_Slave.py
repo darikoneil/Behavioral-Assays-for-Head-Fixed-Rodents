@@ -109,7 +109,7 @@ if __name__ == '__main__':
     behavCam.isRunning2 = True
     behavCam.is_recording_time = True
     behavCam.start()
-    while time()-_start_1 < 60:
+    while time()-_start_1 < 120:
         continue
     _start_2 = time()
     behavCam.isRunning2 = False

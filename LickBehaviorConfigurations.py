@@ -123,13 +123,13 @@ class LickTrainingConfig:
         self.validated = False
 
         # General Parameters (Protected with no single setters)
-        self._animal_id = "EM0084"
+        self._animal_id = "Test Ras Mouse 6"
         self._base_path = getcwd() # or manually enter a filepath
         self._data_path = "".join([self.base_path, "\\Data\\", self.animal_id])
 
         # Behavior Parameters
         self._single_lick_volume = 3.8 # liquid dispensed in response to single lick (uL)
-        self._max_liquid_intake = 1.0 # upper limit of total liquid consumption (mL)
+        self._max_liquid_intake = 0.2 # upper limit of total liquid consumption (mL)
         self._rewards_per_trial = 25 # Number of rewards per trial
         self._reward_duration_water = 20.125 # ms
         self._reward_duration_sucrose = 18.5 # ms
