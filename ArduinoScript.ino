@@ -4,9 +4,11 @@ String program_name = "ArduinoScript";
 #define UseSerial
 
 // Input Checking
-#define SucroseCheckSignalInputs
-#define WaterCheckSignalInputs
-#define WetStartCheckSignalInputs
+#define CheckSignalInputsSucrose
+#define CheckSignalInputsWater
+#define CheckSignalInputsWetStart
+#define CheckSignalInputsMotorSwapper
+#define CheckSignalInputsMotorRemover
 
 // Event Feedback
 #define EventFeedback
@@ -167,6 +169,18 @@ void loop() {
       SerialUSB.flush();
     #endif
 
+    #ifdef CheckSignalInputsMotorSwapper
+        SerialUSB.print("Swapper: ");
+        SerialUSB.println(digitalRead(request_swap_pin));
+        SerialUSB.flush();
+    #endif
+
+    #ifdef CheckSignalInputsMotorRemover
+        SerialUSB.print("Remover: ");
+        SerialUSB.println(digitalRead(request_remove_pin));
+        SerialUSB.flush();
+    #endif
+
     #ifdef Flush
     if (flush==0) {
       digitalWrite(trigger_sucrose_pin, HIGH);
@@ -193,6 +207,7 @@ void loop() {
       #endif
     }
     #endif
+
     if(rewarding_sucrose == 1){
         checkTerminateSucrose(); // Don't bother calling these unless delivering
     }
@@ -371,11 +386,22 @@ void checkLickSwap() {
             swap_pos = 180;
             swapper_timeout_start = micros();
             LickSwapper.write(swap_pos);
+
+            #ifdef EventFeedback
+                SerialUSB.println("Swapper Motor Trigger.")
+                SerialUSB.flush();
+            #endif
+
         }
         else {
             swap_pos = 0;
             swapper_timeout_start = micros();
             LickSwapper.write(swap_pos);
+
+            #ifdef EventFeedback
+                SerialUSB.println("Swapper Motor Trigger.")
+                SerialUSB.flush();
+            #endif
         }
     }
 }
@@ -386,11 +412,21 @@ void checkLickRemove() {
             remove_pos = 180;
             remover_timeout_start = micros();
             LickRemover.write(remove_pos);
+
+            #ifdef EventFeedback
+                SerialUSB.println("Remover Motor Triggered.")
+                SerialUSB.flush();
+            #endif
         }
         else {
             remove_pos = 0;
             remover_timeout_start = micros();
             LickRemover.write(remove_pos);
+
+            #ifdef EventFeedback
+                SerialUSB.println("Remover Motor Triggered.")
+                SerialUSB.flush();
+            #endif
         }
     }
 }
