@@ -1,4 +1,20 @@
-String program_name = "ArduinoScript";
+/*
+ Name:    Consolidated_Microcontroller_Script.ino
+ Created: 10/19/2022 10:52:14 AM
+ Author:  Darik A. O'Neil, Rafael Yuste Laboratory, Columbia University
+*/
+
+/*
+This is a a consolidation of four scripts
+
+1: Rewards
+2: Motors
+3: Quadratic Encoder
+4: Load Cell
+
+*/
+
+String program_name = "Consolidated_Script";
 
 // Use Serials
 #define UseSerial
@@ -15,12 +31,11 @@ String program_name = "ArduinoScript";
 
 // Performance Checks
 #define CheckTimingFull
-#ifdef  CheckTimingFull
-long time1 = 0;
-long time2 = 0;
-#endif
-
 #define CheckTimingBufferSize
+
+/*
+ Code Begins Below Here
+*/
 
 // Quadratic Encoder Parameters
 int pulses = 0; // Quadratic Encoder Pulses
@@ -64,6 +79,27 @@ int remove_pos = 0;
 #include <Servo.h>
 Servo LickSwapper;
 Servo LickRemover;
+
+// Load Cell
+#include "HX711.h"
+HX711 scale;
+
+// Load Cell Parameters
+long reading;
+
+// Load Cell Pins
+const int DOUT = 24;
+const int CLK = 26;
+const int SDA = A0;
+const int SCL = A1;
+const int DAC_VCC = A2;
+const int DAC_GND = A3;
+
+
+#ifdef  CheckTimingFull
+long time1 = 0;
+long time2 = 0;
+#endif
 
 #ifdef Flush
 int flush = 0; // Proceeds 0 -> 1 -> 2
@@ -127,7 +163,10 @@ void setup() {
     LickSwapper.attach(command_swap_pin);
     LickRemover.attach(command_remove_pin);
 
-   #ifdef UseSerial
+    // Attach Load Cell
+    scale.begin(DOUT, CLK);
+
+    #ifdef UseSerial
     SerialUSB.begin(9600);
     while (!SerialUSB);
     {
@@ -136,7 +175,7 @@ void setup() {
     SerialUSB.flush();
     SerialUSB.println(program_name);
     SerialUSB.flush();
-   #endif
+    #endif
 }
 
 void loop() {
@@ -455,4 +494,9 @@ void reportPosition() {
        interval_start = micros();
     }
 
+}
+
+void checkLoadCell() {
+    reading = scale.read();
+    // Do Something
 }
