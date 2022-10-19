@@ -46,8 +46,8 @@ long interval = (1/update_frequency)*1000;
 long interval_start = 0;
 
 // Quadratic Encoder Pins
-const int encoder_pin_A = 18;
-const int encoder_pin_B = 19;
+const int encoder_pin_A = 48;
+const int encoder_pin_B = 50;
 
 
 // Behavioral Parameters
@@ -66,9 +66,9 @@ long swapper_timeout_start = 0; // timeout start
 long remover_timeout_start = 0; // timeout start
 
 // Motor Pins
-const int request_swap_pin = 13;
-const int request_remove_pin = 10;
-const int command_swap_pin = 5;
+const int request_swap_pin = 22;
+const int request_remove_pin = 24;
+const int command_swap_pin = 2;
 const int command_remove_pin = 3;
 
 // Motor Positions
@@ -88,12 +88,10 @@ HX711 scale;
 long reading;
 
 // Load Cell Pins
-const int DOUT = 24;
-const int CLK = 26;
-const int SDA = A0;
-const int SCL = A1;
-const int DAC_VCC = A2;
-const int DAC_GND = A3;
+const int DOUT = 49;
+const int CLK = 51;
+const int SDA_FORCE = SDA1;
+const int SCL_FORCE = SCL1;
 
 
 #ifdef  CheckTimingFull
@@ -106,19 +104,22 @@ int flush = 0; // Proceeds 0 -> 1 -> 2
 #endif
 
 // Digital Out Pins
-const int licked_water_pin = 31; // Signal to DAQ that water spout was licked
-const int licked_sucrose_pin = 29; // Signal to DAQ that sucrose spout was licked
-const int rewarded_water_pin = 27; // Signal to DAQ that water reward was delivered
-const int rewarded_sucrose_pin = 25; // Signal to DAQ that sucrose reward was delivered
-const int trigger_water_pin = 12; // Trigger delivery of water reward
-const int trigger_sucrose_pin = 13; // Trigger delivery of sucrose reward
+const int licked_water_pin = 29; // Signal to DAQ that water spout was licked
+const int licked_sucrose_pin = 27; // Signal to DAQ that sucrose spout was licked
+const int rewarded_water_pin = 25; // Signal to DAQ that water reward was delivered
+const int rewarded_sucrose_pin = 23; // Signal to DAQ that sucrose reward was delivered
+const int enable_water_solenoid = 37; // remain high always
+const int enable_sucrose_solenoid = 39; // remain high always
+const int trigger_water_pin = 41; // Trigger delivery of water reward
+const int trigger_sucrose_pin = 43; // Trigger delivery of sucrose reward
+
 
 // Digital In Pins
-const int permission_water_pin = 53; // Permits water reward triggering upon licking
-const int permission_sucrose_pin = 51; // Permits sucrose reward triggering upon licking
-const int water_cap_touch_pin = 8; // water cap touch input
+const int permission_water_pin = 31; // Permits water reward triggering upon licking
+const int permission_sucrose_pin = 33; // Permits sucrose reward triggering upon licking
+const int water_cap_touch_pin = 45; // water cap touch input
 const int sucrose_cap_touch_pin = 47; // sucrose cap touch input
-const int wet_start_pin = 23; // wet start pin
+const int wet_start_pin = 35; // wet start pin
 
 // booleans or pseudo-booleans
 int rewarding_sucrose = 0; // 0 is False, 1 is True
