@@ -114,3 +114,6 @@ python RespectiveBehavioralScript.pyw
 | Simple Discrimination | RunSimpleDiscrimination.pyw |
 | Reversal Test | RunReversalTest.pyw |
 
+## Hardware
+
+[Shield](https://oshpark.com/shared_projects/IC9BiR9Q) (Designed for arduino due, eagle files provided to migrate to another microcontroller)
