@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import Union
 import numpy as np
 
 
@@ -22,12 +24,12 @@ class HardConfig:
         # Motor Position
         self.motor_pos_channel_name = "BurrowDAQ/ai1"
         self.motor_pos_channel_id = int(1)
+        # Locomotion Readout
+        self.dummy_channel_name = "BurrowDAQ/ai2"
+        self.dummy_channel_id = int(2)
         # Force Readout
-        self.force_channel_name = "BurrowDAQ/ai2"
-        self.force_channel_id = int(2)
-        # Dummy Channel - Reserved for future use
-        self.dummy_channel_name = "BurrowDAQ/ai3"
-        self.dummy_channel_id = int(3)
+        self.force_channel_name = "BurrowDAQ/ai3"
+        self.force_channel_id = int(3)
 
         # Digital Input Parameters
         self.num_digital_in = int(5)
@@ -92,9 +94,9 @@ class HardConfig:
         self.wet_start_channel_id = int(0)
 
     @property
-    def buffer_size(self):
+    def buffer_size(self) -> Union[int, None]:
         """
-        Samples per Buffer (units: samples, round integer) (Comment for below)
+        Samples per Buffer (units: samples, round integer)
 
         :rtype: int
         """
@@ -108,7 +110,7 @@ class HardConfig:
             return
 
     @property
-    def buffers_per_second(self):
+    def buffers_per_second(self) -> Union[int, None]:
         """
         DAQ buffers each second (units: Hz, round integer)
 

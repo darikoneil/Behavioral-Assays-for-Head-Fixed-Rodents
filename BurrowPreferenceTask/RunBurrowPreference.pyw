@@ -5,7 +5,7 @@ from BurrowPreference_Real_GUI import Ui_MainWindow
 from BurrowPreferenceMachine import BurrowPreferenceTask
 from LickBehaviorConfigurations import BurrowPreferenceConfig
 from GenericModules.BehavioralCamera_Master import BehavCamMaster
-from HardwareConfiguration import HardConfig
+from Hardware.HardwareConfiguration import HardConfig
 from GenericModules.SaveModule import Saver, Pickler
 
 import sys
