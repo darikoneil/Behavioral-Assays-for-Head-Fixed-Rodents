@@ -2,7 +2,8 @@
 ---
 ##    
 
-## **_All code currently under construction... Check to see if this repo is sync'd to working code directory!!!_**
+## **_All code currently under construction...      
+Check to see if this repo is sync'd to working code directory!!!_**
 
 ## Running-Disk Behaviors
 
