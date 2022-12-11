@@ -2,7 +2,7 @@
 ---
 ##    
 
-## **_Under Construction..._**
+## **_All code currently under construction... Check to see if this repo is sync'd to working code directory!!!_**
 
 ## Running-Disk Behaviors
 
@@ -67,7 +67,7 @@ conda env create -f environment.yml
 9. Enter the created anaconda environment     
 
 ```
-conda activate LickingBehavior
+conda activate Behavioral_Assays_for_Head_Fixed_Rodents
 ```
 
 10. Assess the integrity of the installation      
