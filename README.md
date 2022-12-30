@@ -1,7 +1,7 @@
 # Behavioral Assays for Head-Fixed Rodents
 ---
 ##    
-
+migrating from pyqt6 to deay pygui
 ## **_All code currently under construction..._**      
 ## **_Check to see if this repo is sync'd to working code directory!!!_**
 
